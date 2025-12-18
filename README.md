@@ -161,7 +161,9 @@ Automated CI/CD workflows:
 
 ## License
 
-MIT License - see [LICENSE](LICENSE) file for details.
+MIT License - see [LICENSE](LICENSE) for details.
+
+Third-party licenses - see [THIRD_PARTY_LICENSES.md](THIRD_PARTY_LICENSES.md) for Garmin FIT SDK license.
 
 ## Credits
 
