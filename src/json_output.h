@@ -4,6 +4,7 @@
 #include "fit_parser.h"
 #include <vector>
 #include <iostream>
+#include <cstdint>
 
 /**
  * JSON output formatter for coordinates

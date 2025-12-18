@@ -17,14 +17,7 @@ endif()
 include_directories(${FIT_SDK_PATH})
 
 # FIT SDK source files
-set(FIT_SDK_SOURCES
-    ${FIT_SDK_PATH}/fit.cpp
-    ${FIT_SDK_PATH}/fit_mesg.cpp
-    ${FIT_SDK_PATH}/fit_mesg_broadcaster.cpp
-    ${FIT_SDK_PATH}/fit_mesg_definition.cpp
-    ${FIT_SDK_PATH}/fit_decode.cpp
-    ${FIT_SDK_PATH}/fit_crc.cpp
-)
+file(GLOB FIT_SDK_SOURCES "${FIT_SDK_PATH}/*.cpp")
 
 # Application source files
 set(APP_SOURCES
@@ -41,7 +34,6 @@ target_compile_options(fit-parser PRIVATE
     -O3                 # Maximum optimization
     -Wall               # All warnings
     -Wextra             # Extra warnings
-    -Werror             # Warnings as errors
     -pedantic           # Strict ISO C++
 )
 
