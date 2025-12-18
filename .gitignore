@@ -1,0 +1,30 @@
+# Build artifacts
+build/
+*.o
+*.a
+fit-parser
+
+# FIT SDK (downloaded during build)
+third_party/fit-sdk/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# CMake
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+Makefile
+*.cmake
+!CMakeLists.txt
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Test outputs
+*.log

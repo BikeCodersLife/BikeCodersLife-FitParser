@@ -1,0 +1,70 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  release:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            artifact: fit-parser-linux-amd64
+          - os: macos-latest
+            artifact: fit-parser-darwin-amd64
+            
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Download Garmin FIT SDK
+      run: |
+        wget https://developer.garmin.com/downloads/fit/FitSDKRelease_21.141.00.zip
+        unzip FitSDKRelease_21.141.00.zip -d third_party/fit-sdk
+    
+    - name: Install dependencies (Ubuntu)
+      if: matrix.os == 'ubuntu-latest'
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y cmake g++
+    
+    - name: Install dependencies (macOS)
+      if: matrix.os == 'macos-latest'
+      run: |
+        brew install cmake
+    
+    - name: Build Release
+      run: |
+        mkdir build
+        cd build
+        cmake -DCMAKE_BUILD_TYPE=Release ..
+        make
+    
+    - name: Strip binary (Ubuntu)
+      if: matrix.os == 'ubuntu-latest'
+      run: |
+        strip build/fit-parser
+    
+    - name: Strip binary (macOS)
+      if: matrix.os == 'macos-latest'
+      run: |
+        strip build/fit-parser
+    
+    - name: Verify binary
+      run: |
+        ./build/fit-parser --version
+        ls -lh build/fit-parser
+    
+    - name: Create archive
+      run: |
+        tar -czf ${{ matrix.artifact }}.tar.gz -C build fit-parser
+    
+    - name: Upload Release Asset
+      uses: softprops/action-gh-release@v1
+      with:
+        files: ${{ matrix.artifact }}.tar.gz
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

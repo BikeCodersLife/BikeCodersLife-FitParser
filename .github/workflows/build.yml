@@ -1,0 +1,60 @@
+name: Build and Test
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+        
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Download Garmin FIT SDK
+      run: |
+        wget https://developer.garmin.com/downloads/fit/FitSDKRelease_21.141.00.zip
+        unzip FitSDKRelease_21.141.00.zip -d third_party/fit-sdk
+    
+    - name: Install dependencies (Ubuntu)
+      if: matrix.os == 'ubuntu-latest'
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y cmake g++
+    
+    - name: Install dependencies (macOS)
+      if: matrix.os == 'macos-latest'
+      run: |
+        brew install cmake
+    
+    - name: Create build directory
+      run: mkdir build
+    
+    - name: Configure CMake
+      run: |
+        cd build
+        cmake ..
+    
+    - name: Build
+      run: |
+        cd build
+        make
+    
+    - name: Test version flag
+      run: |
+        ./build/fit-parser --version
+    
+    - name: Test help flag
+      run: |
+        ./build/fit-parser --help
+    
+    - name: Verify binary exists
+      run: |
+        ls -lh build/fit-parser
+        file build/fit-parser

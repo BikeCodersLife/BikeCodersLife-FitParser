@@ -1,0 +1,62 @@
+#include "json_output.h"
+#include <iomanip>
+#include <sstream>
+#include <ctime>
+
+std::string JsonOutput::timestampToIso8601(uint32_t timestamp) {
+    // FIT epoch: 1989-12-31 00:00:00 UTC
+    // Unix epoch: 1970-01-01 00:00:00 UTC
+    // Difference: 631065600 seconds
+    const uint32_t FIT_EPOCH_OFFSET = 631065600;
+    
+    time_t unixTime = timestamp + FIT_EPOCH_OFFSET;
+    struct tm* timeinfo = gmtime(&unixTime);
+    
+    std::ostringstream oss;
+    oss << std::put_time(timeinfo, "%Y-%m-%dT%H:%M:%SZ");
+    return oss.str();
+}
+
+std::string JsonOutput::escapeJson(const std::string& str) {
+    std::ostringstream oss;
+    for (char c : str) {
+        switch (c) {
+            case '"':  oss << "\\\""; break;
+            case '\\': oss << "\\\\"; break;
+            case '\b': oss << "\\b";  break;
+            case '\f': oss << "\\f";  break;
+            case '\n': oss << "\\n";  break;
+            case '\r': oss << "\\r";  break;
+            case '\t': oss << "\\t";  break;
+            default:   oss << c;      break;
+        }
+    }
+    return oss.str();
+}
+
+void JsonOutput::writeCoordinates(const std::vector<Coordinate>& coordinates) {
+    std::cout << "{" << std::endl;
+    std::cout << "  \"coordinates\": [" << std::endl;
+    
+    for (size_t i = 0; i < coordinates.size(); ++i) {
+        const Coordinate& coord = coordinates[i];
+        
+        std::cout << "    {";
+        std::cout << "\"lat\": " << std::fixed << std::setprecision(6) << coord.lat << ", ";
+        std::cout << "\"lon\": " << std::fixed << std::setprecision(6) << coord.lon << ", ";
+        std::cout << "\"elevation\": " << std::fixed << std::setprecision(1) << coord.elevation << ", ";
+        std::cout << "\"timestamp\": \"" << timestampToIso8601(coord.timestamp) << "\"";
+        std::cout << "}";
+        
+        if (i < coordinates.size() - 1) {
+            std::cout << ",";
+        }
+        std::cout << std::endl;
+    }
+    
+    std::cout << "  ]," << std::endl;
+    std::cout << "  \"summary\": {" << std::endl;
+    std::cout << "    \"points\": " << coordinates.size() << std::endl;
+    std::cout << "  }" << std::endl;
+    std::cout << "}" << std::endl;
+}
