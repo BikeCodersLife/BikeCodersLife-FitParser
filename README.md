@@ -4,26 +4,14 @@ High-performance C++ FIT file parser using the official Garmin FIT SDK. Extracts
 
 ## Features
 
-- ✅ **Fast**: Parses 300KB FIT files in <1 second
-- ✅ **Secure**: Resource limits (256MB memory, 30s CPU time)
-- ✅ **Official SDK**: Uses Garmin FIT SDK for accurate parsing
-- ✅ **JSON Output**: Easy integration with any language
-- ✅ **Cross-platform**: Linux and macOS binaries
+- ✅ **Fast**: Parses 300KB files in ~200ms (55,000 points/second)
+- ✅ **Secure**: Multiple security layers with resource limits
+- ✅ **Reliable**: 100% success rate on 29 real-world test files
+- ✅ **Cross-platform**: Linux and macOS binaries via GitHub Actions
 
-## Performance
-
-| File Size | Points | Parse Time |
-|-----------|--------|------------|
-| 300KB     | ~8,500 | <1 second  |
-| 1MB       | ~28,000| <3 seconds |
-
-**40-80x faster than PHP-based parsers**
-
-## Installation
+## Quick Start
 
 ### Download Pre-compiled Binary
-
-Download the latest release for your platform:
 
 ```bash
 # Linux (amd64)
@@ -31,31 +19,65 @@ wget https://github.com/BikeCodersLife/BikeCodersLife-FitParser/releases/latest/
 tar -xzf fit-parser-linux-amd64.tar.gz
 chmod +x fit-parser
 sudo mv fit-parser /usr/local/bin/
-
-# macOS (amd64)
-wget https://github.com/BikeCodersLife/BikeCodersLife-FitParser/releases/latest/download/fit-parser-darwin-amd64.tar.gz
-tar -xzf fit-parser-darwin-amd64.tar.gz
-chmod +x fit-parser
-sudo mv fit-parser /usr/local/bin/
 ```
 
-### Build from Source
+### Usage
+
+```bash
+# Parse FIT file
+fit-parser ride.fit
+
+# Output (JSON to stdout)
+{
+  "coordinates": [
+    {"lat": 52.3702, "lon": 4.8952, "elevation": 2.5, "timestamp": "2024-01-15T10:30:00Z"},
+    ...
+  ],
+  "summary": {
+    "points": 13160
+  }
+}
+```
+
+## Performance
+
+| File Size | Points | Parse Time |
+|-----------|--------|------------|
+| 551KB     | 13,160 | **237ms**  |
+| 300KB     | 8,500  | ~200ms     |
+| 132KB     | 3,625  | ~60ms      |
+
+**210x faster than PHP-based parsers** 🚀
+
+See [docs/BENCHMARKS.md](docs/BENCHMARKS.md) for detailed performance analysis.
+
+## Security
+
+Multiple security layers protect against malicious files:
+
+- ✅ Resource limits (256MB memory, 30s CPU)
+- ✅ File validation (size, type, path sanitization)
+- ✅ Process isolation
+- ✅ Read-only operations
+
+See [docs/SECURITY.md](docs/SECURITY.md) for comprehensive security documentation.
+
+## Build from Source
 
 **Prerequisites:**
 - CMake 3.15+
 - C++17 compiler (GCC 7+, Clang 5+)
-- Garmin FIT SDK
+- Garmin FIT SDK 21.158.00
 
-**Build steps:**
+**Build:**
 
 ```bash
 # Clone repository
 git clone https://github.com/BikeCodersLife/BikeCodersLife-FitParser.git
 cd BikeCodersLife-FitParser
 
-# Download Garmin FIT SDK
-wget https://developer.garmin.com/downloads/fit/FitSDKRelease_21.141.00.zip
-unzip FitSDKRelease_21.141.00.zip -d third_party/fit-sdk
+# Download FIT SDK manually from https://developer.garmin.com/fit/download/
+# Extract to third_party/fit-sdk/
 
 # Build
 mkdir build && cd build
@@ -63,55 +85,10 @@ cmake ..
 make
 
 # Test
-ctest --output-on-failure
-
-# Install
-sudo make install
+./fit-parser --version
 ```
 
-## Usage
-
-```bash
-# Parse FIT file
-fit-parser /path/to/ride.fit
-
-# Output (JSON to stdout)
-{
-  "coordinates": [
-    {
-      "lat": 52.3702,
-      "lon": 4.8952,
-      "elevation": 2.5,
-      "timestamp": "2024-01-15T10:30:00Z"
-    },
-    {
-      "lat": 52.3703,
-      "lon": 4.8953,
-      "elevation": 2.6,
-      "timestamp": "2024-01-15T10:30:05Z"
-    }
-  ],
-  "summary": {
-    "points": 1250,
-    "duration": 3600,
-    "distance": 25000
-  }
-}
-```
-
-### Error Handling
-
-```bash
-# Invalid file
-fit-parser invalid.fit
-# Exit code: 1
-# stderr: "Error: Failed to decode FIT file"
-
-# File not found
-fit-parser missing.fit
-# Exit code: 1
-# stderr: "Error: Cannot open file: missing.fit"
-```
+See [SETUP.md](SETUP.md) for detailed build instructions.
 
 ## Integration Examples
 
@@ -142,7 +119,6 @@ result = subprocess.run(
 )
 
 data = json.loads(result.stdout)
-coordinates = data['coordinates']
 ```
 
 ### Node.js
@@ -156,40 +132,32 @@ const output = execSync('/usr/local/bin/fit-parser ride.fit', {
 });
 
 const data = JSON.parse(output);
-const coordinates = data.coordinates;
 ```
 
-## Security
-
-The parser implements multiple security measures:
-
-- **Memory limit**: 256MB maximum
-- **CPU time limit**: 30 seconds maximum
-- **File size validation**: Configurable max size
-- **Read-only access**: No file writes
-- **No network access**: Fully offline
-- **Input validation**: Magic byte verification
-
-## Development
-
-### Running Tests
+## Testing
 
 ```bash
-cd build
-ctest --output-on-failure
+# Run test suite
+./tests/run_tests.sh
+
+# Results: 29/29 tests passed ✅
 ```
 
-### Benchmarking
+See [tests/README.md](tests/README.md) for testing documentation.
 
-```bash
-time ./build/fit-parser tests/fixtures/valid.fit
-```
+## Documentation
 
-### Code Style
+- **[SETUP.md](SETUP.md)** - Build and installation instructions
+- **[docs/SECURITY.md](docs/SECURITY.md)** - Security measures and threat model
+- **[docs/BENCHMARKS.md](docs/BENCHMARKS.md)** - Performance analysis and benchmarks
+- **[tests/README.md](tests/README.md)** - Testing framework documentation
 
-- C++17 standard
-- Compiler warnings as errors (`-Werror`)
-- Optimization level 3 (`-O3`)
+## GitHub Actions
+
+Automated CI/CD workflows:
+
+- **Build**: Compiles and tests on Ubuntu + macOS
+- **Release**: Creates binaries for each tagged version
 
 ## License
 
