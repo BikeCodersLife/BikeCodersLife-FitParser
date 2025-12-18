@@ -1,6 +1,9 @@
 #include <iostream>
 #include <cstring>
 #include <sys/resource.h>
+#include <sys/stat.h>
+#include <unistd.h>
+#include <limits.h>
 #include "fit_parser.h"
 #include "json_output.h"
 
@@ -24,6 +27,11 @@ void setResourceLimits() {
     limit.rlim_cur = 0;
     limit.rlim_max = 0;
     setrlimit(RLIMIT_CORE, &limit);
+    
+    // Limit number of open file descriptors
+    limit.rlim_cur = 10;
+    limit.rlim_max = 10;
+    setrlimit(RLIMIT_NOFILE, &limit);
 }
 
 /**
@@ -45,6 +53,53 @@ void printUsage(const char* programName) {
 void printVersion() {
     std::cout << "BikeCodersLife FIT Parser v1.0.0" << std::endl;
     std::cout << "Built with Garmin FIT SDK" << std::endl;
+}
+
+/**
+ * Validate file path and size for security
+ */
+bool validateFile(const char* filepath) {
+    // Maximum file size: 100MB (FIT files are typically <10MB)
+    const off_t MAX_FILE_SIZE = 100 * 1024 * 1024;
+    
+    // Check for null or empty path
+    if (!filepath || filepath[0] == '\0') {
+        std::cerr << "Error: Invalid file path" << std::endl;
+        return false;
+    }
+    
+    // Resolve to absolute path to prevent directory traversal
+    char realPath[PATH_MAX];
+    if (!realpath(filepath, realPath)) {
+        std::cerr << "Error: Cannot resolve file path" << std::endl;
+        return false;
+    }
+    
+    // Check if file exists and get stats
+    struct stat fileStat;
+    if (stat(realPath, &fileStat) != 0) {
+        std::cerr << "Error: Cannot access file" << std::endl;
+        return false;
+    }
+    
+    // Check if it's a regular file (not a directory, symlink, device, etc.)
+    if (!S_ISREG(fileStat.st_mode)) {
+        std::cerr << "Error: Not a regular file" << std::endl;
+        return false;
+    }
+    
+    // Check file size
+    if (fileStat.st_size > MAX_FILE_SIZE) {
+        std::cerr << "Error: File too large (max 100MB)" << std::endl;
+        return false;
+    }
+    
+    if (fileStat.st_size == 0) {
+        std::cerr << "Error: File is empty" << std::endl;
+        return false;
+    }
+    
+    return true;
 }
 
 /**
@@ -71,6 +126,11 @@ int main(int argc, char* argv[]) {
     
     // Set security limits
     setResourceLimits();
+    
+    // Validate file before parsing
+    if (!validateFile(argv[1])) {
+        return 1;
+    }
     
     try {
         // Parse FIT file
