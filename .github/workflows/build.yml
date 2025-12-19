@@ -17,11 +17,6 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
     
-    - name: Download Garmin FIT SDK
-      run: |
-        wget https://developer.garmin.com/downloads/fit/FitSDKRelease_21.158.00.zip
-        unzip FitSDKRelease_21.158.00.zip -d third_party/fit-sdk
-    
     - name: Install dependencies (Ubuntu)
       if: matrix.os == 'ubuntu-latest'
       run: |

@@ -4,9 +4,6 @@ build/
 *.a
 fit-parser
 
-# FIT SDK (downloaded during build)
-third_party/fit-sdk/
-
 # IDE
 .vscode/
 .idea/
@@ -28,3 +25,4 @@ Thumbs.db
 
 # Test outputs
 *.log
+SETUP.md
