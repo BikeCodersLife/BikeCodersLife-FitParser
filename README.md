@@ -39,6 +39,12 @@ fit-parser ride.fit
 }
 ```
 
+## Distance Calculation (Haversine)
+
+The `FitParser` calculates total ride distance using the **Haversine formula**. This mathematical equation accounts for the Earth's curvature by calculating the "great-circle distance" between points on a sphere. 
+
+Unlike simple grid-based geometry, the Haversine formula ensures high-precision distance metrics for cycling activities, using a mean Earth radius of 6,371.003 km.
+
 ## Performance
 
 | File Size | Points | Parse Time |
