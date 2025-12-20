@@ -1,0 +1,34 @@
+name: Static Analysis
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  analyze:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Install dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y cppcheck clang-tidy cmake
+    
+    - name: Run Cppcheck
+      run: |
+        cppcheck --enable=all --suppress=missingIncludeSystem --xml src/ 2> cppcheck-report.xml
+    
+    - name: Configure CMake for Clang-Tidy
+      run: |
+        mkdir build
+        cd build
+        cmake -DCMAKE_EXPORT_COMPILE_COMMANDS=ON ..
+    
+    - name: Run Clang-Tidy
+      run: |
+        clang-tidy -p build/ src/*.cpp

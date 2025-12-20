@@ -158,6 +158,23 @@ See [tests/README.md](tests/README.md) for testing documentation.
 - **[docs/BENCHMARKS.md](docs/BENCHMARKS.md)** - Performance analysis and benchmarks
 - **[tests/README.md](tests/README.md)** - Testing framework documentation
 
+## Static Analysis
+
+This project uses `cppcheck` and `clang-tidy` to maintain high code quality. These are automatically run in GitHub Actions on every push.
+
+**Run locally:**
+
+```bash
+# Cppcheck
+cppcheck --enable=all --suppress=missingIncludeSystem src/
+
+# Clang-Tidy
+# First, generate compile commands (in build directory)
+cmake -DCMAKE_EXPORT_COMPILE_COMMANDS=ON ..
+# Then run
+clang-tidy -p build/ src/*.cpp
+```
+
 ## GitHub Actions
 
 Automated CI/CD workflows:
