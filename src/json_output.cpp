@@ -34,10 +34,11 @@ std::string JsonOutput::escapeJson(const std::string& str) {
     return oss.str();
 }
 
-void JsonOutput::writeCoordinates(const std::vector<Coordinate>& coordinates) {
+void JsonOutput::writeCoordinates(const RideStatistic& stats) {
     std::cout << "{" << std::endl;
     std::cout << "  \"coordinates\": [" << std::endl;
     
+    const auto& coordinates = stats.coordinates;
     for (size_t i = 0; i < coordinates.size(); ++i) {
         const Coordinate& coord = coordinates[i];
         
@@ -56,7 +57,11 @@ void JsonOutput::writeCoordinates(const std::vector<Coordinate>& coordinates) {
     
     std::cout << "  ]," << std::endl;
     std::cout << "  \"summary\": {" << std::endl;
-    std::cout << "    \"points\": " << coordinates.size() << std::endl;
+    std::cout << "    \"points\": " << coordinates.size() << "," << std::endl;
+    std::cout << "    \"distanceKm\": " << std::fixed << std::setprecision(2) << stats.distanceKm << "," << std::endl;
+    std::cout << "    \"durationMin\": " << std::fixed << std::setprecision(2) << stats.durationMin << "," << std::endl;
+    std::cout << "    \"startTime\": \"" << timestampToIso8601(stats.startTime) << "\"," << std::endl;
+    std::cout << "    \"endTime\": \"" << timestampToIso8601(stats.endTime) << "\"" << std::endl;
     std::cout << "  }" << std::endl;
     std::cout << "}" << std::endl;
 }

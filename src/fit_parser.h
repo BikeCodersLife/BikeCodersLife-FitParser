@@ -16,6 +16,17 @@ struct Coordinate {
 };
 
 /**
+ * Ride statistics extracted from FIT file
+ */
+struct RideStatistic {
+    std::vector<Coordinate> coordinates;
+    double distanceKm;
+    double durationMin;
+    uint32_t startTime;
+    uint32_t endTime;
+};
+
+/**
  * FIT file parser using Garmin FIT SDK
  */
 class FitParser {
@@ -27,14 +38,19 @@ public:
     explicit FitParser(const std::string& filename);
     
     /**
-     * Extract GPS coordinates from FIT file
-     * @return Vector of coordinates
+     * Extract GPS coordinates and stats from FIT file
+     * @return RideStatistic with coordinates and summary
      * @throws std::runtime_error if file cannot be opened or parsed
      */
-    std::vector<Coordinate> extractCoordinates();
+    RideStatistic extractCoordinates();
     
 private:
     std::string filename_;
+    
+    /**
+     * Calculate Haversine distance between two points
+     */
+    double calculateDistance(double lat1, double lon1, double lat2, double lon2);
 };
 
 #endif // FIT_PARSER_H

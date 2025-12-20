@@ -51,7 +51,7 @@ void printUsage(const char* programName) {
  * Print version information
  */
 void printVersion() {
-    std::cout << "BikeCodersLife FIT Parser v1.0.0" << std::endl;
+    std::cout << "BikeCodersLife FIT Parser v1.1.0" << std::endl;
     std::cout << "Built with Garmin FIT SDK" << std::endl;
 }
 
@@ -134,12 +134,13 @@ int main(int argc, char* argv[]) {
     
     try {
         // Parse FIT file
+        // Parse FIT file
         FitParser parser(argv[1]);
-        std::vector<Coordinate> coordinates = parser.extractCoordinates();
+        RideStatistic stats = parser.extractCoordinates();
         
         // Output JSON
         JsonOutput output;
-        output.writeCoordinates(coordinates);
+        output.writeCoordinates(stats);
         
         return 0;
         

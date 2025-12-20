@@ -12,10 +12,10 @@
 class JsonOutput {
 public:
     /**
-     * Write coordinates to stdout as JSON
-     * @param coordinates Vector of coordinates to output
+     * Write coordinates and stats to JSON
+     * @param stats Ride statistics
      */
-    void writeCoordinates(const std::vector<Coordinate>& coordinates);
+    void writeCoordinates(const RideStatistic& stats);
     
 private:
     /**

@@ -45,7 +45,7 @@ public:
 
 FitParser::FitParser(const std::string& filename) : filename_(filename) {}
 
-std::vector<Coordinate> FitParser::extractCoordinates() {
+RideStatistic FitParser::extractCoordinates() {
     // Open FIT file
     std::fstream file(filename_, std::ios::in | std::ios::binary);
     if (!file.is_open()) {
@@ -63,7 +63,58 @@ std::vector<Coordinate> FitParser::extractCoordinates() {
     }
     
     file.close();
+
+    RideStatistic stats;
+    stats.coordinates = listener.coordinates;
+    stats.distanceKm = 0.0;
+    stats.durationMin = 0.0;
+    stats.startTime = 0;
+    stats.endTime = 0;
+
+    if (stats.coordinates.empty()) {
+        return stats;
+    }
+
+    // Calculate stats
+    double totalDistanceMeters = 0.0;
+    stats.startTime = stats.coordinates.front().timestamp;
+    stats.endTime = stats.coordinates.back().timestamp;
+
+    // Calculate duration in minutes (difference between start and end timestamps)
+    // FIT timestamps are seconds since epoch
+    if (stats.endTime > stats.startTime) {
+        stats.durationMin = (stats.endTime - stats.startTime) / 60.0;
+    }
+
+    // Calculate distance
+    for (size_t i = 1; i < stats.coordinates.size(); ++i) {
+        const auto& p1 = stats.coordinates[i-1];
+        const auto& p2 = stats.coordinates[i];
+        
+        totalDistanceMeters += calculateDistance(p1.lat, p1.lon, p2.lat, p2.lon);
+    }
+
+    stats.distanceKm = totalDistanceMeters / 1000.0;
     
-    // Return extracted coordinates
-    return listener.coordinates;
+    // Round to 2 decimal places for consistency
+    stats.distanceKm = std::round(stats.distanceKm * 100.0) / 100.0;
+    stats.durationMin = std::round(stats.durationMin * 100.0) / 100.0;
+
+    return stats;
+}
+
+double FitParser::calculateDistance(double lat1, double lon1, double lat2, double lon2) {
+    const double earthRadius = 6371003.0; // Mean Earth Radius in meters
+    const double degToRad = M_PI / 180.0;
+
+    double dLat = (lat2 - lat1) * degToRad;
+    double dLon = (lon2 - lon1) * degToRad;
+
+    double a = std::sin(dLat / 2) * std::sin(dLat / 2) +
+               std::cos(lat1 * degToRad) * std::cos(lat2 * degToRad) *
+               std::sin(dLon / 2) * std::sin(dLon / 2);
+
+    double c = 2 * std::atan2(std::sqrt(a), std::sqrt(1 - a));
+
+    return earthRadius * c;
 }
