@@ -168,7 +168,7 @@ Third-party licenses - see [THIRD_PARTY_LICENSES.md](THIRD_PARTY_LICENSES.md) fo
 ## Credits
 
 - Built with [Garmin FIT SDK](https://developer.garmin.com/fit/overview/)
-- Developed by [BikeCodersLife](https://github.com/BikeCodersLife)
+- Developed by **Xander** <handlebar@bikecoders.life> ([BikeCodersLife](https://github.com/BikeCodersLife))
 
 ## Support
 
