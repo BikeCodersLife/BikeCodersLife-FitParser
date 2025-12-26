@@ -57,6 +57,14 @@ Unlike simple grid-based geometry, the Haversine formula ensures high-precision 
 
 See [docs/BENCHMARKS.md](docs/BENCHMARKS.md) for detailed performance analysis.
 
+## Resource Optimization
+
+This parser is optimized for the [ScalewayJobRunner](file:///home/xkoevoet/Development/BikeCodersLife/ScalewayJobRunner) ecosystem. It supports **Performance Hints** to ensure PHP memory limits and container resources are synchronized. 
+
+When running in a Scaleway container, it is recommended to set a `MEMORY_LIMIT` environment variable. The JobRunner will automatically apply a **20% safety margin** to protect the host OS while allowing the C++ `fit-parser` binary sufficient overhead.
+
+For more details, see the [ScalewayJobRunner Resource Optimization](file:///home/xkoevoet/Development/BikeCodersLife/ScalewayJobRunner#resource-optimization) guide.
+
 ## Security
 
 Multiple security layers protect against malicious files:
