@@ -7,6 +7,9 @@
 #include <fstream>
 #include <sstream>
 #include <cmath>
+#include <string>
+#include <vector>
+#include <algorithm>
 #include "fit_parser.h"
 #include "fit_writer.h"
 #include "json_output.h"
@@ -115,6 +118,18 @@ int main(int argc, char* argv[]) {
     if (argc < 2) {
         printUsage(argv[0]);
         return 1;
+    }
+
+    // Handle --version flag
+    if (std::strcmp(argv[1], "--version") == 0) {
+        printVersion();
+        return 0;
+    }
+
+    // Handle --help flag
+    if (std::strcmp(argv[1], "--help") == 0) {
+        printUsage(argv[0]);
+        return 0;
     }
     
     // Handle --convert-csv flag
