@@ -23,6 +23,7 @@ file(GLOB FIT_SDK_SOURCES "${FIT_SDK_PATH}/*.cpp")
 set(APP_SOURCES
     src/main.cpp
     src/fit_parser.cpp
+    src/fit_writer.cpp
     src/json_output.cpp
 )
 

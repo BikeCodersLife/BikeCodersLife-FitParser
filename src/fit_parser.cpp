@@ -37,6 +37,19 @@ public:
                 // Timestamp (FIT_DATE_TIME is uint32, seconds since FIT epoch)
                 coord.timestamp = recordMesg.IsTimestampValid() ? recordMesg.GetTimestamp() : 0;
                 
+                // Health Data
+                coord.hasHeartRate = recordMesg.IsHeartRateValid();
+                coord.heartRate = coord.hasHeartRate ? recordMesg.GetHeartRate() : 0;
+                
+                coord.hasPower = recordMesg.IsPowerValid();
+                coord.power = coord.hasPower ? recordMesg.GetPower() : 0;
+                
+                coord.hasCadence = recordMesg.IsCadenceValid();
+                coord.cadence = coord.hasCadence ? recordMesg.GetCadence() : 0;
+                
+                coord.hasTemperature = recordMesg.IsTemperatureValid();
+                coord.temperature = coord.hasTemperature ? recordMesg.GetTemperature() : 0;
+                
                 coordinates.push_back(coord);
             }
         }
@@ -70,6 +83,16 @@ RideStatistic FitParser::extractCoordinates() {
     stats.durationMin = 0.0;
     stats.startTime = 0;
     stats.endTime = 0;
+    
+    // Initialize health stats
+    stats.avgHeartRate = 0;
+    stats.maxHeartRate = 0;
+    stats.avgPower = 0;
+    stats.maxPower = 0;
+    stats.avgCadence = 0;
+    stats.hasHeartRateData = false;
+    stats.hasPowerData = false;
+    stats.hasCadenceData = false;
 
     if (stats.coordinates.empty()) {
         return stats;
@@ -79,19 +102,57 @@ RideStatistic FitParser::extractCoordinates() {
     double totalDistanceMeters = 0.0;
     stats.startTime = stats.coordinates.front().timestamp;
     stats.endTime = stats.coordinates.back().timestamp;
+    
+    // Accumulators for averages
+    double totalHeartRate = 0;
+    long countHeartRate = 0;
+    double totalPower = 0;
+    long countPower = 0;
+    double totalCadence = 0;
+    long countCadence = 0;
 
     // Calculate duration in minutes (difference between start and end timestamps)
     // FIT timestamps are seconds since epoch
     if (stats.endTime > stats.startTime) {
         stats.durationMin = (stats.endTime - stats.startTime) / 60.0;
     }
-
-    // Calculate distance
-    for (size_t i = 1; i < stats.coordinates.size(); ++i) {
-        const auto& p1 = stats.coordinates[i-1];
-        const auto& p2 = stats.coordinates[i];
+    
+    // Iterate through coordinates to calculate distance and health stats
+    for (size_t i = 0; i < stats.coordinates.size(); ++i) {
+        const auto& point = stats.coordinates[i];
         
-        totalDistanceMeters += calculateDistance(p1.lat, p1.lon, p2.lat, p2.lon);
+        // Distance
+        if (i > 0) {
+             const auto& prev = stats.coordinates[i-1];
+             totalDistanceMeters += calculateDistance(prev.lat, prev.lon, point.lat, point.lon);
+        }
+        
+        // Heart Rate
+        if (point.hasHeartRate) {
+            stats.hasHeartRateData = true;
+            totalHeartRate += point.heartRate;
+            countHeartRate++;
+            if (point.heartRate > stats.maxHeartRate) {
+                stats.maxHeartRate = point.heartRate;
+            }
+        }
+        
+        // Power
+        if (point.hasPower) {
+            stats.hasPowerData = true;
+            totalPower += point.power;
+            countPower++;
+            if (point.power > stats.maxPower) {
+                stats.maxPower = point.power;
+            }
+        }
+        
+        // Cadence
+        if (point.hasCadence) {
+            stats.hasCadenceData = true;
+            totalCadence += point.cadence;
+            countCadence++;
+        }
     }
 
     stats.distanceKm = totalDistanceMeters / 1000.0;
@@ -99,6 +160,11 @@ RideStatistic FitParser::extractCoordinates() {
     // Round to 2 decimal places for consistency
     stats.distanceKm = std::round(stats.distanceKm * 100.0) / 100.0;
     stats.durationMin = std::round(stats.durationMin * 100.0) / 100.0;
+    
+    // Calculate Averages
+    if (countHeartRate > 0) stats.avgHeartRate = totalHeartRate / countHeartRate;
+    if (countPower > 0) stats.avgPower = totalPower / countPower;
+    if (countCadence > 0) stats.avgCadence = totalCadence / countCadence;
 
     return stats;
 }

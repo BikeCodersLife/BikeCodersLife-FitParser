@@ -13,6 +13,14 @@ struct Coordinate {
     double lon;
     double elevation;
     uint32_t timestamp;
+    uint8_t heartRate;
+    uint16_t power;
+    uint8_t cadence;
+    int8_t temperature;
+    bool hasHeartRate;
+    bool hasPower;
+    bool hasCadence;
+    bool hasTemperature;
 };
 
 /**
@@ -24,6 +32,18 @@ struct RideStatistic {
     double durationMin;
     uint32_t startTime;
     uint32_t endTime;
+    
+    // Health Stats
+    double avgHeartRate;
+    double maxHeartRate;
+    double avgPower;
+    double maxPower;
+    double avgCadence;
+    
+    // Data availability flags
+    bool hasHeartRateData;
+    bool hasPowerData;
+    bool hasCadenceData;
 };
 
 /**

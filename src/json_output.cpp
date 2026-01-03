@@ -46,6 +46,13 @@ void JsonOutput::writeCoordinates(const RideStatistic& stats) {
         std::cout << "\"lat\": " << std::fixed << std::setprecision(6) << coord.lat << ", ";
         std::cout << "\"lon\": " << std::fixed << std::setprecision(6) << coord.lon << ", ";
         std::cout << "\"elevation\": " << std::fixed << std::setprecision(1) << coord.elevation << ", ";
+        
+        // Health Data
+        if (coord.hasHeartRate) std::cout << "\"heartRate\": " << (int)coord.heartRate << ", ";
+        if (coord.hasPower) std::cout << "\"power\": " << coord.power << ", ";
+        if (coord.hasCadence) std::cout << "\"cadence\": " << (int)coord.cadence << ", ";
+        if (coord.hasTemperature) std::cout << "\"temperature\": " << (int)coord.temperature << ", ";
+        
         std::cout << "\"timestamp\": \"" << timestampToIso8601(coord.timestamp) << "\"";
         std::cout << "}";
         
@@ -60,6 +67,20 @@ void JsonOutput::writeCoordinates(const RideStatistic& stats) {
     std::cout << "    \"points\": " << coordinates.size() << "," << std::endl;
     std::cout << "    \"distanceKm\": " << std::fixed << std::setprecision(2) << stats.distanceKm << "," << std::endl;
     std::cout << "    \"durationMin\": " << std::fixed << std::setprecision(2) << stats.durationMin << "," << std::endl;
+    
+    // Health Stats
+    if (stats.hasHeartRateData) {
+        std::cout << "    \"avgHeartRate\": " << std::fixed << std::setprecision(1) << stats.avgHeartRate << "," << std::endl;
+        std::cout << "    \"maxHeartRate\": " << std::fixed << std::setprecision(1) << stats.maxHeartRate << "," << std::endl;
+    }
+    if (stats.hasPowerData) {
+        std::cout << "    \"avgPower\": " << std::fixed << std::setprecision(1) << stats.avgPower << "," << std::endl;
+        std::cout << "    \"maxPower\": " << std::fixed << std::setprecision(1) << stats.maxPower << "," << std::endl;
+    }
+    if (stats.hasCadenceData) {
+        std::cout << "    \"avgCadence\": " << std::fixed << std::setprecision(1) << stats.avgCadence << "," << std::endl;
+    }
+    
     std::cout << "    \"startTime\": \"" << timestampToIso8601(stats.startTime) << "\"," << std::endl;
     std::cout << "    \"endTime\": \"" << timestampToIso8601(stats.endTime) << "\"" << std::endl;
     std::cout << "  }" << std::endl;
