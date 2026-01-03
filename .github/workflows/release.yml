@@ -36,7 +36,9 @@ jobs:
     - name: Install dependencies (macOS)
       if: matrix.os == 'macos-latest'
       run: |
-        brew install cmake
+        if ! command -v cmake &> /dev/null; then
+          brew install cmake
+        fi
     
     - name: Build Release (Standard)
       if: "!matrix.is_alpine"
