@@ -6,8 +6,9 @@ High-performance C++ FIT file parser using the official Garmin FIT SDK. Extracts
 
 - ✅ **Fast**: Parses 300KB files in ~200ms (55,000 points/second)
 - ✅ **Secure**: Multiple security layers with resource limits
-- ✅ **Reliable**: 100% success rate on 29 real-world test files
-- ✅ **Cross-platform**: Linux and macOS binaries via GitHub Actions
+- ✅ **Two-way**: Full support for both **Parsing** and **Writing** FIT files
+- ✅ **Health-ready**: Extracts HR, Power, Cadence, and Temperature snapshots
+- ✅ **Reliable**: 100% success rate on 29+ real-world test files
 
 ## Quick Start
 

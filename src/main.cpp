@@ -271,7 +271,7 @@ int main(int argc, char* argv[]) {
             FitWriter writer;
             writer.write(outputFit, stats);
             
-            std::cout << "Successfully converted CSV to FIT: " << outputFit << std::endl;
+            std::cerr << "Successfully converted CSV to FIT: " << outputFit << std::endl;
             return 0;
             
         } catch (const std::exception& e) {
