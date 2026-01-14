@@ -1,0 +1,226 @@
+/**
+ * Any CSS included here will be global. The classic template
+ * bundles Infima by default. Infima is a CSS framework designed to
+ * work well for content-centric websites.
+ */
+
+/* You can override the default Infima variables here. */
+:root {
+  --ifm-color-primary: #2e8555;
+  --ifm-color-primary-dark: #29784c;
+  --ifm-color-primary-darker: #277148;
+  --ifm-color-primary-darkest: #205d3b;
+  --ifm-color-primary-light: #33925d;
+  --ifm-color-primary-lighter: #359962;
+  --ifm-color-primary-lightest: #3cad6e;
+  --ifm-code-font-size: 95%;
+  --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.1);
+}
+
+/* For readability concerns, you should choose a lighter palette in dark mode. */
+[data-theme='dark'] {
+  --ifm-color-primary: #25c2a0;
+  --ifm-color-primary-dark: #21af90;
+  --ifm-color-primary-darker: #1fa588;
+  --ifm-color-primary-darkest: #1a8870;
+  --ifm-color-primary-light: #29d5b0;
+  --ifm-color-primary-lighter: #32d8b4;
+  --ifm-color-primary-lightest: #4fddbf;
+  --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.3);
+}
+
+/* Custom styles for diagrams */
+.mermaid,
+.docusaurus-mermaid-container {
+  text-align: center;
+  margin: 2rem 0;
+}
+
+/* Mermaid ER diagram relationship lines - thicker and lighter */
+.docusaurus-mermaid-container svg .relationshipLine,
+.docusaurus-mermaid-container svg g.edgePaths path,
+.docusaurus-mermaid-container svg g.edges path,
+.mermaid-zoom-svg-container svg .relationshipLine,
+.mermaid-zoom-svg-container svg g.edgePaths path,
+.mermaid-zoom-svg-container svg g.edges path {
+  stroke: #cd2a2a !important;
+  stroke-width: 2px !important;
+}
+
+/* Relationship line markers/arrows */
+.docusaurus-mermaid-container svg defs marker path,
+.mermaid-zoom-svg-container svg defs marker path {
+  fill: #999 !important;
+  stroke: #999 !important;
+}
+
+/* Better code block styling */
+.theme-code-block {
+  margin: 1.5rem 0;
+}
+
+/* Improve table styling */
+table {
+  display: table;
+  width: 100%;
+  margin: 1.5rem 0;
+}
+
+/* Alert boxes */
+.alert {
+  padding: 1rem;
+  margin: 1rem 0;
+  border-radius: 4px;
+  border-left: 4px solid;
+}
+
+.alert--info {
+  background-color: #e7f2fa;
+  border-color: #2e8555;
+}
+
+.alert--warning {
+  background-color: #fff4e5;
+  border-color: #f59e0b;
+}
+
+.alert--danger {
+  background-color: #ffe4e6;
+  border-color: #ef4444;
+}
+
+/* Mermaid Zoom Modal Styles */
+.mermaid-zoomable,
+.docusaurus-mermaid-container.mermaid-zoomable {
+  cursor: zoom-in !important;
+  position: relative;
+  transition: box-shadow 0.2s ease;
+}
+
+.mermaid-zoomable:hover,
+.docusaurus-mermaid-container.mermaid-zoomable:hover {
+  box-shadow: 0 0 0 3px var(--ifm-color-primary);
+  border-radius: 8px;
+}
+
+.mermaid-zoomable::after,
+.docusaurus-mermaid-container.mermaid-zoomable::after {
+  content: "Click to zoom";
+  position: absolute;
+  bottom: 12px;
+  right: 12px;
+  background: var(--ifm-color-primary);
+  color: white;
+  padding: 6px 12px;
+  border-radius: 4px;
+  font-size: 13px;
+  font-weight: 500;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  pointer-events: none;
+  z-index: 10;
+}
+
+.mermaid-zoomable:hover::after,
+.docusaurus-mermaid-container.mermaid-zoomable:hover::after {
+  opacity: 1;
+}
+
+.mermaid-zoom-modal {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 9999;
+}
+
+.mermaid-zoom-modal.active {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.mermaid-zoom-backdrop {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.85);
+}
+
+.mermaid-zoom-container {
+  position: relative;
+  width: 95vw;
+  height: 95vh;
+  display: flex;
+  flex-direction: column;
+  background: #000000;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+}
+
+.mermaid-zoom-toolbar {
+  display: flex;
+  gap: 8px;
+  padding: 12px;
+  background: #1a1a1a;
+  border-bottom: 1px solid #333;
+  justify-content: flex-end;
+}
+
+.mermaid-zoom-btn {
+  width: 36px;
+  height: 36px;
+  border: 1px solid #444;
+  border-radius: 6px;
+  background: #2a2a2a;
+  color: #ffffff;
+  cursor: pointer;
+  font-size: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.mermaid-zoom-btn:hover {
+  background: var(--ifm-color-primary);
+  color: white;
+  border-color: var(--ifm-color-primary);
+}
+
+.mermaid-zoom-close {
+  margin-left: 8px;
+}
+
+.mermaid-zoom-content {
+  flex: 1;
+  overflow: hidden;
+  position: relative;
+}
+
+.mermaid-zoom-svg-container {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.mermaid-zoom-svg-container svg {
+  max-width: none !important;
+  max-height: none !important;
+}
+
+.mermaid-zoom-hint {
+  padding: 8px 12px;
+  text-align: center;
+  font-size: 12px;
+  color: #888;
+  background: #1a1a1a;
+  border-top: 1px solid #333;
+}
