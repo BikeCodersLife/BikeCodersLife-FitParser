@@ -1,24 +1,41 @@
-image: php:8.4
+image: ubuntu:22.04
 
 stages:
+  - build
+  - analysis
   - test
-  - deploy
-
-cache:
-  key: ${CI_COMMIT_REF_SLUG}
-  paths:
-    - vendor/
 
 before_script:
   - apt-get update -yqq
-  - apt-get install -yqq git libzip-dev zip unzip
-  - docker-php-ext-install zip
-  - curl -sS https://getcomposer.org/installer | php
-  - php composer.phar install --prefer-dist --no-progress
+  - DEBIAN_FRONTEND=noninteractive apt-get install -yqq cmake g++ cppcheck clang-tidy make git
+
+build:
+  stage: build
+  script:
+    - mkdir build
+    - cd build
+    - cmake ..
+    - make
+    - ./fit-parser --version
+    - ./fit-parser --help
+  artifacts:
+    paths:
+      - build/fit-parser
+    expire_in: 1 hour
+
+static-analysis:
+  stage: analysis
+  script:
+    - cppcheck --enable=all --suppress=missingIncludeSystem --error-exitcode=1 src/
+    - mkdir build_analysis
+    - cd build_analysis
+    - cmake -DCMAKE_EXPORT_COMPILE_COMMANDS=ON ..
+    - clang-tidy -p . ../src/*.cpp
 
 test:
   stage: test
+  dependencies:
+    - build
   script:
-    - if [ -f phpunit.xml ] || [ -f phpunit.xml.dist ]; then vendor/bin/phpunit --colors=never; fi
-    - if [ -f phpstan.neon ] || [ -f phpstan.dist.neon ]; then vendor/bin/phpstan analyse; fi
-    - if [ -f .php-cs-fixer.dist.php ]; then vendor/bin/php-cs-fixer fix --dry-run --diff; fi
+    - ./build/fit-parser --help
+    # Add actual test execution if any test scripts exist, e.g. ./tests/run_tests.sh
