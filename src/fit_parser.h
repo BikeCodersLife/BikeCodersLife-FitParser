@@ -21,6 +21,8 @@ struct Coordinate {
     bool hasPower;
     bool hasCadence;
     bool hasTemperature;
+    /** False when GPS has been stripped for privacy (start/end trim zone). */
+    bool gpsValid = true;
 };
 
 /**

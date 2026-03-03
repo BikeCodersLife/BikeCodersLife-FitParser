@@ -86,10 +86,13 @@ void FitWriter::write(const std::string& filename, const RideStatistic& stats) {
 
             // Coordinates (Degrees to Semicircles)
             // semicircles = degrees * (2^31 / 180)
-            int32_t lat = (int32_t)(coord.lat * (2147483648.0 / 180.0));
-            int32_t lon = (int32_t)(coord.lon * (2147483648.0 / 180.0));
-            record.SetPositionLat(lat);
-            record.SetPositionLong(lon);
+            // gpsValid=false means this record is in a privacy trim zone — omit position fields.
+            if (coord.gpsValid) {
+                int32_t lat = (int32_t)(coord.lat * (2147483648.0 / 180.0));
+                int32_t lon = (int32_t)(coord.lon * (2147483648.0 / 180.0));
+                record.SetPositionLat(lat);
+                record.SetPositionLong(lon);
+            }
 
             // Altitude (meters)
             if (coord.elevation != 0) {
