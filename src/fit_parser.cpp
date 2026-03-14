@@ -90,6 +90,9 @@ RideStatistic FitParser::extractCoordinates() {
     stats.avgPower = 0;
     stats.maxPower = 0;
     stats.avgCadence = 0;
+    stats.avgSpeed = 0;
+    stats.maxSpeed = 0;
+    stats.movingTimeSec = 0;
     stats.hasHeartRateData = false;
     stats.hasPowerData = false;
     stats.hasCadenceData = false;
@@ -117,16 +120,41 @@ RideStatistic FitParser::extractCoordinates() {
         stats.durationMin = (stats.endTime - stats.startTime) / 60.0;
     }
     
-    // Iterate through coordinates to calculate distance and health stats
+    // Speed accumulators
+    double totalMovingSpeed = 0.0;
+    long countMovingSpeed = 0;
+    double movingTimeSec = 0.0;
+    const double movingThreshold = 1.0; // km/h — below this = stopped
+
+    // Iterate through coordinates to calculate distance, speed, and health stats
     for (size_t i = 0; i < stats.coordinates.size(); ++i) {
-        const auto& point = stats.coordinates[i];
-        
-        // Distance
+        auto& point = stats.coordinates[i];
+
+        // Distance and per-point speed
         if (i > 0) {
-             const auto& prev = stats.coordinates[i-1];
-             totalDistanceMeters += calculateDistance(prev.lat, prev.lon, point.lat, point.lon);
+            const auto& prev = stats.coordinates[i-1];
+            double segmentMeters = calculateDistance(prev.lat, prev.lon, point.lat, point.lon);
+            totalDistanceMeters += segmentMeters;
+
+            // Compute GPS-derived speed (km/h) from consecutive points
+            uint32_t dt = point.timestamp - prev.timestamp;
+            if (dt > 0) {
+                double speedKmh = (segmentMeters / 1000.0) / (dt / 3600.0);
+                point.speed = std::round(speedKmh * 10.0) / 10.0;
+                point.hasSpeed = true;
+
+                // Moving time and speed stats
+                if (point.speed > movingThreshold) {
+                    totalMovingSpeed += point.speed;
+                    countMovingSpeed++;
+                    movingTimeSec += dt;
+                }
+                if (point.speed > stats.maxSpeed) {
+                    stats.maxSpeed = point.speed;
+                }
+            }
         }
-        
+
         // Heart Rate
         if (point.hasHeartRate) {
             stats.hasHeartRateData = true;
@@ -136,7 +164,7 @@ RideStatistic FitParser::extractCoordinates() {
                 stats.maxHeartRate = point.heartRate;
             }
         }
-        
+
         // Power
         if (point.hasPower) {
             stats.hasPowerData = true;
@@ -146,7 +174,7 @@ RideStatistic FitParser::extractCoordinates() {
                 stats.maxPower = point.power;
             }
         }
-        
+
         // Cadence
         if (point.hasCadence) {
             stats.hasCadenceData = true;
@@ -155,16 +183,25 @@ RideStatistic FitParser::extractCoordinates() {
         }
     }
 
+    // Copy speed from second point to first (no delta available for first point)
+    if (stats.coordinates.size() >= 2 && stats.coordinates[1].hasSpeed) {
+        stats.coordinates[0].speed = stats.coordinates[1].speed;
+        stats.coordinates[0].hasSpeed = true;
+    }
+
     stats.distanceKm = totalDistanceMeters / 1000.0;
-    
+
     // Round to 2 decimal places for consistency
     stats.distanceKm = std::round(stats.distanceKm * 100.0) / 100.0;
     stats.durationMin = std::round(stats.durationMin * 100.0) / 100.0;
-    
+    stats.maxSpeed = std::round(stats.maxSpeed * 10.0) / 10.0;
+    stats.movingTimeSec = movingTimeSec;
+
     // Calculate Averages
     if (countHeartRate > 0) stats.avgHeartRate = totalHeartRate / countHeartRate;
     if (countPower > 0) stats.avgPower = totalPower / countPower;
     if (countCadence > 0) stats.avgCadence = totalCadence / countCadence;
+    if (countMovingSpeed > 0) stats.avgSpeed = std::round((totalMovingSpeed / countMovingSpeed) * 10.0) / 10.0;
 
     return stats;
 }

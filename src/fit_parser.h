@@ -13,6 +13,7 @@ struct Coordinate {
     double lon;
     double elevation;
     uint32_t timestamp;
+    double speed = 0.0;       // km/h, computed from GPS
     uint8_t heartRate;
     uint16_t power;
     uint8_t cadence;
@@ -21,6 +22,7 @@ struct Coordinate {
     bool hasPower;
     bool hasCadence;
     bool hasTemperature;
+    bool hasSpeed = false;
     /** False when GPS has been stripped for privacy (start/end trim zone). */
     bool gpsValid = true;
 };
@@ -41,7 +43,10 @@ struct RideStatistic {
     double avgPower;
     double maxPower;
     double avgCadence;
-    
+    double avgSpeed;        // km/h, moving speed (excludes stops)
+    double maxSpeed;        // km/h
+    double movingTimeSec;   // seconds where speed > threshold
+
     // Data availability flags
     bool hasHeartRateData;
     bool hasPowerData;

@@ -47,6 +47,9 @@ void JsonOutput::writeCoordinates(const RideStatistic& stats) {
         std::cout << "\"lon\": " << std::fixed << std::setprecision(6) << coord.lon << ", ";
         std::cout << "\"elevation\": " << std::fixed << std::setprecision(1) << coord.elevation << ", ";
         
+        // Speed
+        if (coord.hasSpeed) std::cout << "\"speed\": " << std::fixed << std::setprecision(1) << coord.speed << ", ";
+
         // Health Data
         if (coord.hasHeartRate) std::cout << "\"heartRate\": " << (int)coord.heartRate << ", ";
         if (coord.hasPower) std::cout << "\"power\": " << coord.power << ", ";
@@ -80,7 +83,12 @@ void JsonOutput::writeCoordinates(const RideStatistic& stats) {
     if (stats.hasCadenceData) {
         std::cout << "    \"avgCadence\": " << std::fixed << std::setprecision(1) << stats.avgCadence << "," << std::endl;
     }
-    
+
+    // Speed stats (always output — computed from GPS)
+    std::cout << "    \"avgSpeed\": " << std::fixed << std::setprecision(1) << stats.avgSpeed << "," << std::endl;
+    std::cout << "    \"maxSpeed\": " << std::fixed << std::setprecision(1) << stats.maxSpeed << "," << std::endl;
+    std::cout << "    \"movingTimeSec\": " << std::fixed << std::setprecision(0) << stats.movingTimeSec << "," << std::endl;
+
     std::cout << "    \"startTime\": \"" << timestampToIso8601(stats.startTime) << "\"," << std::endl;
     std::cout << "    \"endTime\": \"" << timestampToIso8601(stats.endTime) << "\"" << std::endl;
     std::cout << "  }" << std::endl;
