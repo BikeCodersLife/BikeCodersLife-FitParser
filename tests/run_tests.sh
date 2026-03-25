@@ -106,8 +106,8 @@ for gpx_file in "$FIXTURES_DIR"/*.gpx; do
 
     if "$PARSER" "$gpx_file" --convert "$fit_output" 2>/dev/null; then
         if [ -f "$fit_output" ] && [ -s "$fit_output" ]; then
-            gpx_size=$(stat -c%s "$gpx_file")
-            fit_size=$(stat -c%s "$fit_output")
+            gpx_size=$(wc -c < "$gpx_file" | tr -d ' ')
+            fit_size=$(wc -c < "$fit_output" | tr -d ' ')
             ratio=$((gpx_size / fit_size))
             pass "$filename → FIT (${gpx_size}B → ${fit_size}B, ${ratio}x smaller)"
         else
