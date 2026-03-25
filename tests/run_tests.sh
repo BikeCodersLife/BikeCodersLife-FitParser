@@ -79,12 +79,13 @@ import sys, json
 d = json.load(sys.stdin)
 assert 'coordinates' in d, 'missing coordinates'
 assert len(d['coordinates']) > 0, 'empty coordinates'
-assert 'distanceKm' in d, 'missing distanceKm'
-assert 'durationMin' in d, 'missing durationMin'
-# Check first coordinate has lat/lon
+# distanceKm may be at top level or in summary
+s = d.get('summary', d)
+assert 'distanceKm' in s, 'missing distanceKm'
+assert 'durationMin' in s, 'missing durationMin'
 c = d['coordinates'][0]
 assert 'lat' in c and 'lon' in c, 'missing lat/lon'
-print(f'{len(d[\"coordinates\"])} points, {d[\"distanceKm\"]:.1f} km')
+print(f'{len(d[\"coordinates\"])} points, {s[\"distanceKm\"]:.1f} km')
 " 2>/dev/null; then
             pass "$filename"
         else
@@ -130,25 +131,25 @@ for gpx_file in "$FIXTURES_DIR"/*.gpx; do
 
     # Parse the converted FIT back to JSON
     if fit_json=$("$PARSER" "$fit_output" 2>/dev/null); then
-        # Compare point counts
+        gpx_json_raw=$("$PARSER" "$gpx_file" 2>/dev/null)
+        # Compare point counts using temp files to avoid shell quoting issues
+        echo "$gpx_json_raw" > "$TMP_DIR/gpx_out.json"
+        echo "$fit_json" > "$TMP_DIR/fit_out.json"
         if python3 -c "
-import sys, json
+import json
 
-# Parse GPX JSON
-gpx_json = json.loads('''$(\"$PARSER\" \"$gpx_file\" 2>/dev/null)''')
-fit_json = json.loads('''$fit_json''')
+gpx_json = json.load(open('$TMP_DIR/gpx_out.json'))
+fit_json = json.load(open('$TMP_DIR/fit_out.json'))
 
 gpx_count = len(gpx_json['coordinates'])
 fit_count = len(fit_json['coordinates'])
 
-# Point counts should match exactly
 assert gpx_count == fit_count, f'point count mismatch: GPX={gpx_count} FIT={fit_count}'
 
-# First and last coordinates should be close (FIT has rounding)
 gpx_first = gpx_json['coordinates'][0]
 fit_first = fit_json['coordinates'][0]
-assert abs(gpx_first['lat'] - fit_first['lat']) < 0.001, 'first lat mismatch'
-assert abs(gpx_first['lon'] - fit_first['lon']) < 0.001, 'first lon mismatch'
+assert abs(gpx_first['lat'] - fit_first['lat']) < 0.001, f'first lat mismatch: {gpx_first[\"lat\"]} vs {fit_first[\"lat\"]}'
+assert abs(gpx_first['lon'] - fit_first['lon']) < 0.001, f'first lon mismatch: {gpx_first[\"lon\"]} vs {fit_first[\"lon\"]}'
 
 print(f'{fit_count} points match')
 " 2>/dev/null; then
