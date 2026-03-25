@@ -47,8 +47,12 @@ set(STRIPPER_SOURCES
     src/main_stripper.cpp
     src/gps_stripper.cpp
     src/fit_parser.cpp
+    src/fit_writer.cpp
+    src/gpx_parser.cpp
+    src/tcx_parser.cpp
 )
 add_executable(gps-stripper ${STRIPPER_SOURCES} ${FIT_SDK_SOURCES})
+target_link_libraries(gps-stripper PRIVATE pugixml::pugixml)
 
 # Compiler options (shared)
 foreach(target fit-parser gps-stripper)
