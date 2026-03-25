@@ -223,3 +223,24 @@ void FitWriter::write(const ParsedActivity& activity, const std::string& outputP
 
     file.close();
 }
+
+void FitWriter::write(const std::string& outputPath, const RideStatistic& stats) {
+    // Convert legacy RideStatistic to ParsedActivity
+    ParsedActivity activity;
+    activity.totalDistanceM = stats.distanceKm * 1000.0;
+    activity.durationSec = stats.durationMin * 60.0;
+    activity.startTime = stats.startTime;
+    activity.endTime = stats.endTime;
+
+    for (const auto& coord : stats.coordinates) {
+        TrackPoint pt;
+        pt.lat = coord.lat;
+        pt.lon = coord.lon;
+        pt.elevation = coord.elevation;
+        pt.hasElevation = (coord.elevation != 0.0);
+        pt.timestamp = coord.timestamp;
+        activity.points.push_back(pt);
+    }
+
+    write(activity, outputPath);
+}

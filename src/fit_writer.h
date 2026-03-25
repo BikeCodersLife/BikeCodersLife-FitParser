@@ -2,6 +2,7 @@
 #define FIT_WRITER_H
 
 #include "track_point.h"
+#include "fit_parser.h"
 #include <string>
 
 /**
@@ -19,6 +20,13 @@ public:
      * @throws std::runtime_error on write failure
      */
     void write(const ParsedActivity& activity, const std::string& outputPath);
+
+    /**
+     * Write a RideStatistic to a FIT file (legacy interface for gps-stripper).
+     * @param outputPath Path for the output FIT file
+     * @param stats Ride statistics to write
+     */
+    void write(const std::string& outputPath, const RideStatistic& stats);
 
 private:
     /**
