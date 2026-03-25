@@ -1,14 +1,16 @@
 # BikeCodersLife FIT Parser
 
-High-performance C++ FIT file parser using the official Garmin FIT SDK. Extracts GPS coordinates from FIT files and outputs them as JSON.
+High-performance C++ multi-format cycling file parser and converter. Parses FIT, GPX, and TCX files using the official Garmin FIT SDK. Converts GPX/TCX to FIT for standardized processing.
 
 ## Features
 
-- ✅ **Fast**: Parses 300KB files in ~200ms (55,000 points/second)
-- ✅ **Secure**: Multiple security layers with resource limits
-- ✅ **Two-way**: Full support for both **Parsing** and **Writing** FIT files
-- ✅ **Health-ready**: Extracts HR, Power, Cadence, and Temperature snapshots
-- ✅ **Reliable**: 100% success rate on 29+ real-world test files
+- **Multi-format**: Parses FIT, GPX 1.0/1.1, and TCX natively
+- **GPX/TCX to FIT conversion**: Convert any cycling file to compact FIT binary (up to 10x smaller)
+- **Full sensor data**: Heart rate, power, cadence, temperature, speed, elevation
+- **Privacy by design**: Converted FIT files contain no device serial, user name, or author info
+- **Fast**: Parses 300KB files in ~200ms (55,000 points/second)
+- **Secure**: Resource limits (256MB memory, 30s CPU), file validation, path sanitization
+- **GPS Stripper**: Companion tool to trim GPS data from ride start/end for privacy
 
 ## Quick Start
 
@@ -16,94 +18,144 @@ High-performance C++ FIT file parser using the official Garmin FIT SDK. Extracts
 
 ```bash
 # Linux (amd64)
-wget https://github.com/BikeCodersLife/BikeCodersLife-FitParser/releases/latest/download/fit-parser-linux-amd64.tar.gz
-tar -xzf fit-parser-linux-amd64.tar.gz
-chmod +x fit-parser
-sudo mv fit-parser /usr/local/bin/
+curl -sL https://github.com/BikeCodersLife/BikeCodersLife-FitParser/releases/latest/download/fit-parser-linux-amd64.tar.gz | tar xz
+chmod +x fit-parser gps-stripper
+sudo mv fit-parser gps-stripper /usr/local/bin/
+
+# macOS (amd64)
+curl -sL https://github.com/BikeCodersLife/BikeCodersLife-FitParser/releases/latest/download/fit-parser-darwin-amd64.tar.gz | tar xz
+
+# Alpine Linux (for Docker)
+curl -sL https://github.com/BikeCodersLife/BikeCodersLife-FitParser/releases/latest/download/fit-parser-alpine-amd64.tar.gz | tar xz
 ```
 
-### Usage
+### Parse any format to JSON
 
 ```bash
-# Parse FIT file
+# FIT file
 fit-parser ride.fit
 
-# Output (JSON to stdout)
+# GPX file
+fit-parser ride.gpx
+
+# TCX file
+fit-parser activity.tcx
+```
+
+All formats produce the same JSON output:
+
+```json
 {
   "coordinates": [
-    {"lat": 52.3702, "lon": 4.8952, "elevation": 2.5, "timestamp": "2024-01-15T10:30:00Z"},
-    ...
+    {
+      "lat": 52.3702,
+      "lon": 4.8952,
+      "elevation": 2.5,
+      "heartRate": 142,
+      "power": 245,
+      "cadence": 90,
+      "timestamp": "2025-06-15T06:30:00Z"
+    }
   ],
   "summary": {
-    "points": 13160
+    "points": 802,
+    "distanceKm": 55.28,
+    "durationMin": 134.57,
+    "avgHeartRate": 138.0,
+    "maxHeartRate": 172.0,
+    "avgPower": 210.0,
+    "maxPower": 450.0,
+    "avgCadence": 88.0,
+    "avgSpeed": 6.85,
+    "maxSpeed": 12.4,
+    "startTime": "2025-06-15T06:30:00Z",
+    "endTime": "2025-06-15T08:44:34Z"
   }
 }
 ```
 
-## Distance Calculation (Haversine)
+### Convert GPX/TCX to FIT
 
-The `FitParser` calculates total ride distance using the **Haversine formula**. This mathematical equation accounts for the Earth's curvature by calculating the "great-circle distance" between points on a sphere. 
+```bash
+# Convert GPX to FIT
+fit-parser ride.gpx --convert ride.fit
 
-Unlike simple grid-based geometry, the Haversine formula ensures high-precision distance metrics for cycling activities, using a mean Earth radius of 6,371.003 km.
+# Convert TCX to FIT
+fit-parser activity.tcx --convert activity.fit
+```
 
-## Performance
+**File size comparison:**
 
-| File Size | Points | Parse Time |
-|-----------|--------|------------|
-| 551KB     | 13,160 | **237ms**  |
-| 300KB     | 8,500  | ~200ms     |
-| 132KB     | 3,625  | ~60ms      |
+| Source | GPX Size | FIT Size | Ratio |
+|--------|----------|----------|-------|
+| Short ride (3 points) | 688 B | 338 B | 2x smaller |
+| Real ride (802 points) | 166 KB | 17 KB | **10x smaller** |
+| Long ride (2000+ points) | 400 KB | 40 KB | **10x smaller** |
 
-**210x faster than PHP-based parsers** 🚀
+### GPS Privacy Stripping
 
-See [docs/BENCHMARKS.md](docs/BENCHMARKS.md) for detailed performance analysis.
+```bash
+# Strip first 2000m and last 2000m of GPS data from a FIT file
+gps-stripper ride.fit stripped_ride.fit 2000 2000
+```
 
-## Resource Optimization
+## Supported Sensor Data
 
-This parser is optimized for the [ScalewayJobRunner](file:///home/xkoevoet/Development/BikeCodersLife/ScalewayJobRunner) ecosystem. It supports **Performance Hints** to ensure PHP memory limits and container resources are synchronized. 
+| Sensor | FIT | GPX | TCX | Notes |
+|--------|-----|-----|-----|-------|
+| GPS (lat/lon) | Yes | Yes | Yes | |
+| Elevation | Yes | Yes | Yes | |
+| Heart Rate | Yes | Yes (TrackPointExtension) | Yes (HeartRateBpm) | |
+| Power | Yes | Yes (TrackPointExtension) | Yes (Watts extension) | |
+| Cadence | Yes | Yes (TrackPointExtension) | Yes | |
+| Temperature | Yes | Yes (TrackPointExtension) | No | |
+| Speed | Yes | Yes (TrackPointExtension) | Yes (Speed extension) | GPX: from speed sensor |
+| Timestamps | Yes | Yes | Yes | Converted to FIT epoch |
 
-When running in a Scaleway container, it is recommended to set a `MEMORY_LIMIT` environment variable. The JobRunner will automatically apply a **20% safety margin** to protect the host OS while allowing the C++ `fit-parser` binary sufficient overhead.
-
-For more details, see the [ScalewayJobRunner Resource Optimization](file:///home/xkoevoet/Development/BikeCodersLife/ScalewayJobRunner#resource-optimization) guide.
-
-## Security
-
-Multiple security layers protect against malicious files:
-
-- ✅ Resource limits (256MB memory, 30s CPU)
-- ✅ File validation (size, type, path sanitization)
-- ✅ Process isolation
-- ✅ Read-only operations
-
-See [docs/SECURITY.md](docs/SECURITY.md) for comprehensive security documentation.
+GPX extensions supported: Garmin `gpxtpx:TrackPointExtension` (v1 and v2), `ns3:` namespace variant, and unprefixed variants.
 
 ## Build from Source
 
 **Prerequisites:**
 - CMake 3.15+
 - C++17 compiler (GCC 7+, Clang 5+)
-- Garmin FIT SDK 21.158.00
-
-**Build:**
+- Garmin FIT SDK (included in `third_party/fit-sdk/`)
+- pugixml (auto-fetched via CMake FetchContent)
 
 ```bash
-# Clone repository
 git clone https://github.com/BikeCodersLife/BikeCodersLife-FitParser.git
 cd BikeCodersLife-FitParser
 
-# Download FIT SDK manually from https://developer.garmin.com/fit/download/
-# Extract to third_party/fit-sdk/
-
-# Build
 mkdir build && cd build
-cmake ..
-make
+cmake -DCMAKE_BUILD_TYPE=Release ..
+make -j$(nproc) fit-parser gps-stripper
 
-# Test
+# Verify
 ./fit-parser --version
+# BikeCodersLife FIT Parser v2.0.0
+
+# Run tests
+cd .. && chmod +x tests/run_tests.sh && tests/run_tests.sh
+# Results: 62/62 passed ✓
 ```
 
-See [SETUP.md](SETUP.md) for detailed build instructions.
+## Docker Integration
+
+```dockerfile
+# Download pre-built binaries in a multi-stage Docker build
+FROM alpine:3.21 AS fit-downloader
+ARG FIT_PARSER_VERSION=v2.0.4
+RUN apk add --no-cache curl tar \
+    && mkdir -p /binaries \
+    && curl -sL "https://github.com/BikeCodersLife/BikeCodersLife-FitParser/releases/download/${FIT_PARSER_VERSION}/fit-parser-alpine-amd64.tar.gz" \
+       | tar xz -C /binaries
+
+# Copy into your application image
+FROM php:8.4-cli-alpine
+COPY --from=fit-downloader /binaries/fit-parser /usr/local/bin/fit-parser
+COPY --from=fit-downloader /binaries/gps-stripper /usr/local/bin/gps-stripper
+RUN chmod +x /usr/local/bin/fit-parser /usr/local/bin/gps-stripper
+```
 
 ## Integration Examples
 
@@ -112,97 +164,92 @@ See [SETUP.md](SETUP.md) for detailed build instructions.
 ```php
 use Symfony\Component\Process\Process;
 
-$process = new Process(['/usr/local/bin/fit-parser', $fitFilePath]);
+// Parse any format — FIT, GPX, or TCX
+$process = new Process(['/usr/local/bin/fit-parser', $filePath]);
 $process->setTimeout(30);
 $process->mustRun();
-
 $data = json_decode($process->getOutput(), true);
-$coordinates = $data['coordinates'];
+
+// Convert GPX to FIT
+$process = new Process(['/usr/local/bin/fit-parser', $gpxPath, '--convert', $fitPath]);
+$process->setTimeout(60);
+$process->mustRun();
 ```
 
 ### Python
 
 ```python
-import subprocess
-import json
+import subprocess, json
 
+# Parse any format
 result = subprocess.run(
-    ['/usr/local/bin/fit-parser', 'ride.fit'],
-    capture_output=True,
-    text=True,
-    timeout=30
+    ['/usr/local/bin/fit-parser', 'ride.gpx'],
+    capture_output=True, text=True, timeout=30
 )
-
 data = json.loads(result.stdout)
+
+# Convert GPX to FIT
+subprocess.run(
+    ['/usr/local/bin/fit-parser', 'ride.gpx', '--convert', 'ride.fit'],
+    check=True, timeout=60
+)
 ```
 
 ### Node.js
 
 ```javascript
 const { execSync } = require('child_process');
-
-const output = execSync('/usr/local/bin/fit-parser ride.fit', {
-  encoding: 'utf-8',
-  timeout: 30000
-});
-
-const data = JSON.parse(output);
+const data = JSON.parse(
+  execSync('/usr/local/bin/fit-parser ride.gpx', { encoding: 'utf-8', timeout: 30000 })
+);
 ```
 
 ## Testing
 
 ```bash
-# Run test suite
 ./tests/run_tests.sh
 
-# Results: 29/29 tests passed ✅
+# 62/62 tests passed ✓
+# - 29 FIT file parsing tests
+# - 10 GPX JSON output tests
+# - 10 GPX→FIT conversion tests
+# - 10 GPX→FIT→JSON round-trip tests
+# - 3 edge case tests
 ```
 
-See [tests/README.md](tests/README.md) for testing documentation.
+**Test fixtures include:** full sensor data, GPS-only, heart rate only, speed sensor, evening-into-night (midnight crossing), GPS signal drops, below-sea-level elevation, negative temperatures.
 
-## Documentation
+## Performance
 
-- **[SETUP.md](SETUP.md)** - Build and installation instructions
-- **[docs/SECURITY.md](docs/SECURITY.md)** - Security measures and threat model
-- **[docs/BENCHMARKS.md](docs/BENCHMARKS.md)** - Performance analysis and benchmarks
-- **[tests/README.md](tests/README.md)** - Testing framework documentation
+| File Size | Points | Parse Time |
+|-----------|--------|------------|
+| 551KB FIT | 13,160 | **237ms** |
+| 166KB GPX | 802 | **45ms** |
+| 300KB FIT | 8,500 | ~200ms |
 
-## Static Analysis
+**210x faster than PHP-based parsers.**
 
-This project uses `cppcheck` and `clang-tidy` to maintain high code quality. These are automatically run in GitHub Actions on every push.
+## Security
 
-**Run locally:**
+- Resource limits: 256MB memory, 30s CPU, 10 file descriptors
+- File validation: size (max 100MB), type, path sanitization (no directory traversal)
+- Process isolation: no network, no core dumps
+- Privacy: converted FIT files strip all device/user identifiers
 
-```bash
-# Cppcheck
-cppcheck --enable=all --suppress=missingIncludeSystem src/
+## CI/CD
 
-# Clang-Tidy
-# First, generate compile commands (in build directory)
-cmake -DCMAKE_EXPORT_COMPILE_COMMANDS=ON ..
-# Then run
-clang-tidy -p build/ src/*.cpp
-```
-
-## GitHub Actions
-
-Automated CI/CD workflows:
-
-- **Build**: Compiles and tests on Ubuntu + macOS
-- **Release**: Creates binaries for each tagged version
+Automated GitHub Actions workflows:
+- **Build**: Compiles and tests on Ubuntu + macOS on every push
+- **Release**: Builds binaries for Linux (amd64), Alpine (amd64), and macOS (amd64) on tagged versions
+- **Static Analysis**: cppcheck + clang-tidy
 
 ## License
 
-MIT License - see [LICENSE](LICENSE) for details.
+MIT License - see [LICENSE](LICENSE).
 
 Third-party licenses - see [THIRD_PARTY_LICENSES.md](THIRD_PARTY_LICENSES.md) for Garmin FIT SDK license.
 
 ## Credits
 
-- Built with [Garmin FIT SDK](https://developer.garmin.com/fit/overview/)
-- Developed by **Xander** <handlebar@bikecoders.life> ([BikeCodersLife](https://github.com/BikeCodersLife))
-
-## Support
-
-- **Issues**: [GitHub Issues](https://github.com/BikeCodersLife/BikeCodersLife-FitParser/issues)
-- **Releases**: [GitHub Releases](https://github.com/BikeCodersLife/BikeCodersLife-FitParser/releases)
+- Built with [Garmin FIT SDK](https://developer.garmin.com/fit/overview/) and [pugixml](https://pugixml.org/)
+- Developed by [BikeCodersLife](https://github.com/BikeCodersLife)
