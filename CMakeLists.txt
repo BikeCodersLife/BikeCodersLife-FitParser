@@ -38,30 +38,28 @@ set(APP_SOURCES
     src/fit_writer.cpp
 )
 
-# Create executable
+# Create fit-parser executable
 add_executable(fit-parser ${APP_SOURCES} ${FIT_SDK_SOURCES})
-
-# Link pugixml
 target_link_libraries(fit-parser PRIVATE pugixml::pugixml)
 
-# Compiler options
-target_compile_options(fit-parser PRIVATE
-    -O3                 # Maximum optimization
-    -Wall               # All warnings
-    -Wextra             # Extra warnings
-    -pedantic           # Strict ISO C++
+# Create gps-stripper executable
+set(STRIPPER_SOURCES
+    src/main_stripper.cpp
+    src/gps_stripper.cpp
+    src/fit_parser.cpp
 )
+add_executable(gps-stripper ${STRIPPER_SOURCES} ${FIT_SDK_SOURCES})
 
-# Static linking for portability (Linux only)
-if(UNIX AND NOT APPLE)
-    target_link_options(fit-parser PRIVATE
-        -static-libgcc
-        -static-libstdc++
-    )
-endif()
+# Compiler options (shared)
+foreach(target fit-parser gps-stripper)
+    target_compile_options(${target} PRIVATE -O3 -Wall -Wextra -pedantic)
+    if(UNIX AND NOT APPLE)
+        target_link_options(${target} PRIVATE -static-libgcc -static-libstdc++)
+    endif()
+endforeach()
 
-# Install target
-install(TARGETS fit-parser DESTINATION bin)
+# Install targets
+install(TARGETS fit-parser gps-stripper DESTINATION bin)
 
 # Enable testing
 enable_testing()
