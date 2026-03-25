@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gpx version="1.1" creator="VeloGrid Test Fixture" xmlns="http://www.topografix.com/GPX/1/1">
+  <metadata>
+    <name>Avondrit Wieringerwerf</name>
+    <time>2024-06-15T18:00:00Z</time>
+  </metadata>
+  <trk>
+    <name>Avondrit Wieringerwerf</name>
+    <trkseg>
+      <!-- Start in Hoorn -->
+      <trkpt lat="52.6425" lon="5.0597">
+        <ele>1.0</ele>
+        <time>2024-06-15T18:00:00Z</time>
+      </trkpt>
+      <!-- Through Medemblik -->
+      <trkpt lat="52.7700" lon="5.1000">
+        <ele>2.0</ele>
+        <time>2024-06-15T18:15:00Z</time>
+      </trkpt>
+      <!-- End in Hollands Kroon area (Wieringerwerf) -->
+      <trkpt lat="52.8500" lon="5.0500">
+        <ele>1.5</ele>
+        <time>2024-06-15T18:30:00Z</time>
+      </trkpt>
+    </trkseg>
+  </trk>
+</gpx>
+
