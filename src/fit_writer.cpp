@@ -2,198 +2,224 @@
 #include <fstream>
 #include <stdexcept>
 #include <cmath>
-#include <ctime>
+#include <algorithm>
+#include <numeric>
 
-// Garmin FIT SDK
 #include <fit_encode.hpp>
 #include <fit_file_id_mesg.hpp>
-#include <fit_record_mesg.hpp>
 #include <fit_event_mesg.hpp>
+#include <fit_record_mesg.hpp>
+#include <fit_lap_mesg.hpp>
 #include <fit_session_mesg.hpp>
 #include <fit_activity_mesg.hpp>
-#include <fit_lap_mesg.hpp>
+#include <fit_date_time.hpp>
 
-FitWriter::FitWriter() {}
+int32_t FitWriter::degreesToSemicircles(double degrees) {
+    // 2^31 semicircles = 180 degrees
+    return static_cast<int32_t>(degrees * (std::pow(2, 31) / 180.0));
+}
 
-void FitWriter::write(const std::string& filename, const RideStatistic& stats) {
-    if (filename.empty()) {
-        throw std::runtime_error("Invalid filename");
+void FitWriter::write(const ParsedActivity& activity, const std::string& outputPath) {
+    if (activity.points.empty()) {
+        throw std::runtime_error("Cannot write FIT file: no track points");
     }
 
+    // Open output file
     std::fstream file;
-    file.open(filename.c_str(), std::ios::in | std::ios::out | std::ios::binary | std::ios::trunc);
-
+    file.open(outputPath, std::ios::in | std::ios::out | std::ios::binary | std::ios::trunc);
     if (!file.is_open()) {
-        throw std::runtime_error("Error opening file for writing: " + filename);
+        throw std::runtime_error("Cannot open output file: " + outputPath);
     }
 
+    // Create FIT encoder (Protocol V2.0 for modern compatibility)
     fit::Encode encode(fit::ProtocolVersion::V20);
     encode.Open(file);
 
-    // 1. File ID Message
+    // --- File ID Message (required) ---
+    // Privacy by design: no serial number, no user name, no device info
     fit::FileIdMesg fileIdMesg;
     fileIdMesg.SetType(FIT_FILE_ACTIVITY);
     fileIdMesg.SetManufacturer(FIT_MANUFACTURER_DEVELOPMENT);
     fileIdMesg.SetProduct(0);
-    fileIdMesg.SetSerialNumber(12345);
-    // Use start time as file creation time if available, otherwise current time
-    // FIT epoch is 1989-12-31 00:00:00 UTC (631065600 seconds offset from Unix epoch)
-    // The timestamp in Coordinate is mostly Unix timestamp from GPX? 
-    // If stats.startTime is Unix timestamp, we need to convert.
-    // However, FitParser::extractCoordinates just takes `recordMesg.GetTimestamp()`.
-    // If `GetTimestamp()` returns seconds since FIT epoch, then `stats.startTime` is FIT time.
-    // If we write it back, we should use it as is.
-    // GPX parser usually provides Unix timestamp.
-    // Let's assume input stats uses the same time basis as output.
-    // Since this is for converting GPX->FIT, input stats.startTime will be Unix Timestamp.
-    // We need to convert Unix -> FIT.
-    // offset = 631065600
-    
-    // Check if timestamp looks like FIT (small) or Unix (large, > 1000000000)
-    // FIT epoch 0 is 1989.
-    // Unix now is ~1.7 billion.
-    // FIT now is ~1.1 billion.
-    // Difference is ~631 million.
-    
-    // Just in case, let's normalize to FIT time.
-    // If > 1600000000 (roughly 2020 in Unix), subtract offset.
-    uint32_t timeOffset = 631065600;
-    
-    uint32_t creationTime = stats.startTime;
-    if (creationTime > 1600000000) {
-        creationTime -= timeOffset;
-    }
-    
-    fileIdMesg.SetTimeCreated(creationTime);
+    fileIdMesg.SetTimeCreated(activity.startTime);
     encode.Write(fileIdMesg);
 
-    // 2. Records
-    if (!stats.coordinates.empty()) {
-        // Start Event
-        fit::EventMesg startEvent;
-        startEvent.SetEvent(FIT_EVENT_TIMER);
-        startEvent.SetEventType(FIT_EVENT_TYPE_START);
-        startEvent.SetTimestamp(creationTime);
-        encode.Write(startEvent);
+    // --- Timer Start Event ---
+    fit::EventMesg eventStart;
+    eventStart.SetTimestamp(activity.startTime);
+    eventStart.SetEvent(FIT_EVENT_TIMER);
+    eventStart.SetEventType(FIT_EVENT_TYPE_START);
+    encode.Write(eventStart);
 
-        for (const auto& coord : stats.coordinates) {
-            fit::RecordMesg record;
-            
-            // Timestamp
-            uint32_t recordTime = coord.timestamp;
-            if (recordTime > 1600000000) recordTime -= timeOffset;
-            record.SetTimestamp(recordTime);
+    // --- Record Messages (per track point) ---
+    // Track statistics for session/lap summary
+    double maxSpeed = 0.0;
+    uint8_t maxHr = 0;
+    uint8_t maxCad = 0;
+    uint16_t maxPwr = 0;
+    double totalSpeed = 0.0;
+    uint32_t hrSum = 0;
+    uint32_t cadSum = 0;
+    uint32_t pwrSum = 0;
+    size_t hrCount = 0;
+    size_t cadCount = 0;
+    size_t pwrCount = 0;
+    size_t speedCount = 0;
 
-            // Coordinates (Degrees to Semicircles)
-            // semicircles = degrees * (2^31 / 180)
-            // gpsValid=false means this record is in a privacy trim zone — omit position fields.
-            if (coord.gpsValid) {
-                int32_t lat = (int32_t)(coord.lat * (2147483648.0 / 180.0));
-                int32_t lon = (int32_t)(coord.lon * (2147483648.0 / 180.0));
-                record.SetPositionLat(lat);
-                record.SetPositionLong(lon);
-            }
+    for (const auto& point : activity.points) {
+        fit::RecordMesg record;
 
-            // Altitude (meters)
-            if (coord.elevation != 0) {
-                record.SetAltitude(static_cast<float>(coord.elevation));
-            }
-
-            // Health Data
-            if (coord.hasHeartRate) {
-                record.SetHeartRate(coord.heartRate);
-            }
-            if (coord.hasPower) {
-                record.SetPower(coord.power);
-            }
-            if (coord.hasCadence) {
-                record.SetCadence(coord.cadence);
-            }
-            if (coord.hasTemperature) {
-                record.SetTemperature(coord.temperature);
-            }
-
-            encode.Write(record);
+        // Timestamp
+        if (point.timestamp > 0) {
+            record.SetTimestamp(point.timestamp);
         }
 
-        // Stop Event
-        fit::EventMesg stopEvent;
-        stopEvent.SetEvent(FIT_EVENT_TIMER);
-        stopEvent.SetEventType(FIT_EVENT_TYPE_STOP_ALL);
-        
-        uint32_t endTime = stats.endTime;
-        if (endTime > 1600000000) endTime -= timeOffset;
-        stopEvent.SetTimestamp(endTime);
-        
-        encode.Write(stopEvent);
+        // Position
+        record.SetPositionLat(degreesToSemicircles(point.lat));
+        record.SetPositionLong(degreesToSemicircles(point.lon));
+
+        // Elevation
+        if (point.hasElevation) {
+            record.SetAltitude(static_cast<FIT_FLOAT32>(point.elevation));
+        }
+
+        // Distance (cumulative, in meters)
+        if (point.distance > 0.0) {
+            record.SetDistance(static_cast<FIT_FLOAT32>(point.distance));
+        }
+
+        // Heart rate
+        if (point.hasHeartRate && point.heart_rate > 0) {
+            record.SetHeartRate(point.heart_rate);
+            hrSum += point.heart_rate;
+            hrCount++;
+            if (point.heart_rate > maxHr) maxHr = point.heart_rate;
+        }
+
+        // Cadence
+        if (point.hasCadence && point.cadence > 0) {
+            record.SetCadence(point.cadence);
+            cadSum += point.cadence;
+            cadCount++;
+            if (point.cadence > maxCad) maxCad = point.cadence;
+        }
+
+        // Power
+        if (point.hasPower && point.power > 0) {
+            record.SetPower(point.power);
+            pwrSum += point.power;
+            pwrCount++;
+            if (point.power > maxPwr) maxPwr = point.power;
+        }
+
+        // Temperature
+        if (point.hasTemperature) {
+            record.SetTemperature(point.temperature);
+        }
+
+        // Speed
+        if (point.hasSpeed && point.speed > 0.0f) {
+            record.SetSpeed(point.speed);
+            totalSpeed += point.speed;
+            speedCount++;
+            if (point.speed > maxSpeed) maxSpeed = point.speed;
+        }
+
+        encode.Write(record);
     }
 
-    // 3. Lap (One single lap for the ride)
-    fit::LapMesg lapMesg;
-    uint32_t startTime = stats.startTime;
-    if (startTime > 1600000000) startTime -= timeOffset;
-    lapMesg.SetStartTime(startTime);
-    lapMesg.SetTimestamp(startTime); // Should be end time? Usually timestamp is when message is written (end of lap)
-    
-    uint32_t endTime = stats.endTime;
-    if (endTime > 1600000000) endTime -= timeOffset;
-    lapMesg.SetTimestamp(endTime);
-    
-    lapMesg.SetTotalElapsedTime(stats.durationMin * 60.0);
-    lapMesg.SetTotalTimerTime(stats.durationMin * 60.0);
-    lapMesg.SetTotalDistance(stats.distanceKm * 1000.0);
-    
-    // Average/Max Health Data
-    if (stats.hasHeartRateData) {
-        lapMesg.SetAvgHeartRate((uint8_t)stats.avgHeartRate);
-        lapMesg.SetMaxHeartRate((uint8_t)stats.maxHeartRate);
-    }
-    if (stats.hasPowerData) {
-        lapMesg.SetAvgPower((uint16_t)stats.avgPower);
-        lapMesg.SetMaxPower((uint16_t)stats.maxPower);
-    }
-    if (stats.hasCadenceData) {
-        lapMesg.SetAvgCadence((uint8_t)stats.avgCadence);
-    }
-    
-    encode.Write(lapMesg);
+    // --- Timer Stop Event ---
+    fit::EventMesg eventStop;
+    eventStop.SetTimestamp(activity.endTime);
+    eventStop.SetEvent(FIT_EVENT_TIMER);
+    eventStop.SetEventType(FIT_EVENT_TYPE_STOP);
+    encode.Write(eventStop);
 
-    // 4. Session
-    fit::SessionMesg sessionMesg;
-    sessionMesg.SetStartTime(startTime);
-    sessionMesg.SetTimestamp(endTime);
-    sessionMesg.SetTotalElapsedTime(stats.durationMin * 60.0);
-    sessionMesg.SetTotalTimerTime(stats.durationMin * 60.0);
-    sessionMesg.SetTotalDistance(stats.distanceKm * 1000.0);
-    sessionMesg.SetSport(FIT_SPORT_CYCLING);
-    sessionMesg.SetSubSport(FIT_SUB_SPORT_GENERIC);
-    sessionMesg.SetNumLaps(1);
-    
-    // Session Health Data
-    if (stats.hasHeartRateData) {
-        sessionMesg.SetAvgHeartRate((uint8_t)stats.avgHeartRate);
-        sessionMesg.SetMaxHeartRate((uint8_t)stats.maxHeartRate);
-    }
-    if (stats.hasPowerData) {
-        sessionMesg.SetAvgPower((uint16_t)stats.avgPower);
-        sessionMesg.SetMaxPower((uint16_t)stats.maxPower);
-    }
-    if (stats.hasCadenceData) {
-        sessionMesg.SetAvgCadence((uint8_t)stats.avgCadence);
-    }
-    
-    encode.Write(sessionMesg);
+    // Compute summary values
+    FIT_FLOAT32 elapsedTime = static_cast<FIT_FLOAT32>(activity.durationSec);
+    FIT_FLOAT32 totalDist = static_cast<FIT_FLOAT32>(activity.totalDistanceM);
+    FIT_FLOAT32 avgSpeed = (speedCount > 0) ? static_cast<FIT_FLOAT32>(totalSpeed / speedCount) : 0.0f;
 
-    // 5. Activity
+    // If no explicit speed data, compute from distance/time
+    if (speedCount == 0 && elapsedTime > 0 && totalDist > 0) {
+        avgSpeed = totalDist / elapsedTime;
+        maxSpeed = avgSpeed; // Best estimate without per-point data
+    }
+
+    // --- Lap Message ---
+    fit::LapMesg lap;
+    lap.SetTimestamp(activity.endTime);
+    lap.SetStartTime(activity.startTime);
+    lap.SetTotalElapsedTime(elapsedTime);
+    lap.SetTotalTimerTime(elapsedTime);
+    lap.SetTotalDistance(totalDist);
+
+    if (activity.totalAscentM > 0) {
+        lap.SetTotalAscent(static_cast<FIT_UINT16>(std::round(activity.totalAscentM)));
+    }
+    if (activity.totalDescentM > 0) {
+        lap.SetTotalDescent(static_cast<FIT_UINT16>(std::round(activity.totalDescentM)));
+    }
+    if (avgSpeed > 0) {
+        lap.SetAvgSpeed(avgSpeed);
+    }
+    if (maxSpeed > 0) {
+        lap.SetMaxSpeed(static_cast<FIT_FLOAT32>(maxSpeed));
+    }
+
+    encode.Write(lap);
+
+    // --- Session Message ---
+    fit::SessionMesg session;
+    session.SetTimestamp(activity.endTime);
+    session.SetStartTime(activity.startTime);
+    session.SetTotalElapsedTime(elapsedTime);
+    session.SetTotalTimerTime(elapsedTime);
+    session.SetTotalDistance(totalDist);
+    session.SetSport(FIT_SPORT_CYCLING);
+    session.SetSubSport(FIT_SUB_SPORT_GENERIC);
+    session.SetFirstLapIndex(0);
+    session.SetNumLaps(1);
+
+    if (activity.totalAscentM > 0) {
+        session.SetTotalAscent(static_cast<FIT_UINT16>(std::round(activity.totalAscentM)));
+    }
+    if (activity.totalDescentM > 0) {
+        session.SetTotalDescent(static_cast<FIT_UINT16>(std::round(activity.totalDescentM)));
+    }
+    if (avgSpeed > 0) {
+        session.SetAvgSpeed(avgSpeed);
+    }
+    if (maxSpeed > 0) {
+        session.SetMaxSpeed(static_cast<FIT_FLOAT32>(maxSpeed));
+    }
+    if (hrCount > 0) {
+        session.SetAvgHeartRate(static_cast<FIT_UINT8>(hrSum / hrCount));
+        session.SetMaxHeartRate(maxHr);
+    }
+    if (cadCount > 0) {
+        session.SetAvgCadence(static_cast<FIT_UINT8>(cadSum / cadCount));
+        session.SetMaxCadence(maxCad);
+    }
+    if (pwrCount > 0) {
+        session.SetAvgPower(static_cast<FIT_UINT16>(pwrSum / pwrCount));
+        session.SetMaxPower(maxPwr);
+    }
+
+    encode.Write(session);
+
+    // --- Activity Message (exactly one required) ---
     fit::ActivityMesg activityMesg;
-    activityMesg.SetTimestamp(endTime);
-    activityMesg.SetTotalTimerTime(stats.durationMin * 60.0);
+    activityMesg.SetTimestamp(activity.endTime);
     activityMesg.SetNumSessions(1);
-    activityMesg.SetType(FIT_ACTIVITY_MANUAL);
-    activityMesg.SetEvent(FIT_EVENT_ACTIVITY);
-    activityMesg.SetEventType(FIT_EVENT_TYPE_STOP);
+    activityMesg.SetLocalTimestamp(static_cast<FIT_LOCAL_DATE_TIME>(activity.endTime));
     encode.Write(activityMesg);
 
-    encode.Close();
+    // Finalize: update header data size and write CRC
+    if (!encode.Close()) {
+        file.close();
+        throw std::runtime_error("Error closing FIT encoder");
+    }
+
     file.close();
 }

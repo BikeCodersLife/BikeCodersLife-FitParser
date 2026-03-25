@@ -18,7 +18,7 @@ struct TrackPoint {
     uint8_t cadence = 0;         // rpm, 0 = not available
     uint16_t power = 0;          // watts, 0 = not available
     int8_t temperature = 0;      // celsius, 0 = not available
-    float speed = 0.0f;          // m/s, 0 = not available
+    float speed = 0.0F;          // m/s, 0 = not available
     double distance = 0.0;       // cumulative meters
 
     bool hasHeartRate = false;

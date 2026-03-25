@@ -46,8 +46,8 @@ jobs:
         mkdir build
         cd build
         cmake -DCMAKE_BUILD_TYPE=Release ..
-        make
-    
+        make -j$(nproc) fit-parser gps-stripper
+
     - name: Build Release (Alpine)
       if: matrix.is_alpine
       run: |
@@ -56,37 +56,44 @@ jobs:
           mkdir -p build-alpine &&
           cd build-alpine &&
           cmake -DCMAKE_BUILD_TYPE=Release .. &&
-          make
+          make -j\$(nproc) fit-parser gps-stripper
         "
-        # Move alpine binary to expected location
+        # Move alpine binaries to expected location
         mkdir -p build
         cp build-alpine/fit-parser build/fit-parser
-    
-    - name: Strip binary (Ubuntu)
+        cp build-alpine/gps-stripper build/gps-stripper
+
+    - name: Strip binaries (Ubuntu)
       if: matrix.os == 'ubuntu-latest' && !matrix.is_alpine
       run: |
-        strip build/fit-parser
-    
-    - name: Strip binary (macOS)
+        strip build/fit-parser build/gps-stripper
+
+    - name: Strip binaries (macOS)
       if: matrix.os == 'macos-latest'
       run: |
-        strip build/fit-parser
-    
-    - name: Verify binary (Standard)
+        strip build/fit-parser build/gps-stripper
+
+    - name: Verify binaries (Standard)
       if: "!matrix.is_alpine"
       run: |
         ./build/fit-parser --version
-        ls -lh build/fit-parser
-    
-    - name: Verify binary (Alpine)
+        ls -lh build/fit-parser build/gps-stripper
+
+    - name: Verify binaries (Alpine)
       if: matrix.is_alpine
       run: |
         docker run --rm -v ${{ github.workspace }}:/src -w /src alpine:3.21 sh -c "./build/fit-parser --version"
-        ls -lh build/fit-parser
-    
+        ls -lh build/fit-parser build/gps-stripper
+
+    - name: Run tests
+      if: "!matrix.is_alpine"
+      run: |
+        chmod +x tests/run_tests.sh
+        tests/run_tests.sh
+
     - name: Create archive
       run: |
-        tar -czf ${{ matrix.artifact }}.tar.gz -C build fit-parser
+        tar -czf ${{ matrix.artifact }}.tar.gz -C build fit-parser gps-stripper
     
     - name: Upload Release Asset
       uses: softprops/action-gh-release@v2
