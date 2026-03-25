@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gpx xmlns="http://www.topografix.com/GPX/1/1"
+     xmlns:gpxtpx="http://www.garmin.com/xmlschemas/TrackPointExtension/v2"
+     version="1.1" creator="Garmin Edge 530">
+  <metadata>
+    <name>Sunday Group Ride - HR Only</name>
+    <time>2025-07-20T07:00:00Z</time>
+  </metadata>
+  <trk>
+    <name>Sunday Group Ride</name>
+    <trkseg>
+      <trkpt lat="52.0907" lon="5.1214"><ele>5</ele><time>2025-07-20T07:00:00Z</time><extensions><gpxtpx:TrackPointExtension><gpxtpx:hr>62</gpxtpx:hr><gpxtpx:cad>0</gpxtpx:cad></gpxtpx:TrackPointExtension></extensions></trkpt>
+      <trkpt lat="52.0920" lon="5.1230"><ele>6</ele><time>2025-07-20T07:00:20Z</time><extensions><gpxtpx:TrackPointExtension><gpxtpx:hr>78</gpxtpx:hr><gpxtpx:cad>72</gpxtpx:cad></gpxtpx:TrackPointExtension></extensions></trkpt>
+      <trkpt lat="52.0940" lon="5.1260"><ele>8</ele><time>2025-07-20T07:00:45Z</time><extensions><gpxtpx:TrackPointExtension><gpxtpx:hr>105</gpxtpx:hr><gpxtpx:cad>85</gpxtpx:cad></gpxtpx:TrackPointExtension></extensions></trkpt>
+      <trkpt lat="52.0965" lon="5.1300"><ele>12</ele><time>2025-07-20T07:01:15Z</time><extensions><gpxtpx:TrackPointExtension><gpxtpx:hr>128</gpxtpx:hr><gpxtpx:cad>90</gpxtpx:cad></gpxtpx:TrackPointExtension></extensions></trkpt>
+      <trkpt lat="52.0990" lon="5.1340"><ele>15</ele><time>2025-07-20T07:01:45Z</time><extensions><gpxtpx:TrackPointExtension><gpxtpx:hr>142</gpxtpx:hr><gpxtpx:cad>92</gpxtpx:cad></gpxtpx:TrackPointExtension></extensions></trkpt>
+      <trkpt lat="52.1020" lon="5.1380"><ele>18</ele><time>2025-07-20T07:02:15Z</time><extensions><gpxtpx:TrackPointExtension><gpxtpx:hr>155</gpxtpx:hr><gpxtpx:cad>95</gpxtpx:cad></gpxtpx:TrackPointExtension></extensions></trkpt>
+      <trkpt lat="52.1050" lon="5.1410"><ele>14</ele><time>2025-07-20T07:02:45Z</time><extensions><gpxtpx:TrackPointExtension><gpxtpx:hr>160</gpxtpx:hr><gpxtpx:cad>88</gpxtpx:cad></gpxtpx:TrackPointExtension></extensions></trkpt>
+      <trkpt lat="52.1080" lon="5.1440"><ele>10</ele><time>2025-07-20T07:03:15Z</time><extensions><gpxtpx:TrackPointExtension><gpxtpx:hr>152</gpxtpx:hr><gpxtpx:cad>82</gpxtpx:cad></gpxtpx:TrackPointExtension></extensions></trkpt>
+      <trkpt lat="52.1100" lon="5.1460"><ele>7</ele><time>2025-07-20T07:03:45Z</time><extensions><gpxtpx:TrackPointExtension><gpxtpx:hr>145</gpxtpx:hr><gpxtpx:cad>78</gpxtpx:cad></gpxtpx:TrackPointExtension></extensions></trkpt>
+      <trkpt lat="52.1115" lon="5.1475"><ele>5</ele><time>2025-07-20T07:04:15Z</time><extensions><gpxtpx:TrackPointExtension><gpxtpx:hr>135</gpxtpx:hr><gpxtpx:cad>70</gpxtpx:cad></gpxtpx:TrackPointExtension></extensions></trkpt>
+    </trkseg>
+  </trk>
+</gpx>

@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gpx xmlns="http://www.topografix.com/GPX/1/1"
+     xmlns:gpxtpx="http://www.garmin.com/xmlschemas/TrackPointExtension/v2"
+     version="1.1" creator="Wahoo ELEMNT BOLT">
+  <metadata>
+    <name>GPS Signal Drops in Tunnel and Forest</name>
+    <time>2025-10-05T14:00:00Z</time>
+  </metadata>
+  <trk>
+    <name>GPS Signal Drops</name>
+    <trkseg>
+      <!-- Normal riding -->
+      <trkpt lat="50.8503" lon="3.3522"><ele>25</ele><time>2025-10-05T14:00:00Z</time><extensions><gpxtpx:TrackPointExtension><gpxtpx:hr>120</gpxtpx:hr><gpxtpx:cad>85</gpxtpx:cad></gpxtpx:TrackPointExtension></extensions></trkpt>
+      <trkpt lat="50.8510" lon="3.3535"><ele>26</ele><time>2025-10-05T14:00:15Z</time><extensions><gpxtpx:TrackPointExtension><gpxtpx:hr>125</gpxtpx:hr><gpxtpx:cad>87</gpxtpx:cad></gpxtpx:TrackPointExtension></extensions></trkpt>
+      <trkpt lat="50.8520" lon="3.3550"><ele>28</ele><time>2025-10-05T14:00:30Z</time><extensions><gpxtpx:TrackPointExtension><gpxtpx:hr>128</gpxtpx:hr><gpxtpx:cad>88</gpxtpx:cad></gpxtpx:TrackPointExtension></extensions></trkpt>
+      <!-- GPS drop: 2 minute gap (tunnel), HR sensor still works -->
+      <trkpt lat="50.8520" lon="3.3550"><ele>28</ele><time>2025-10-05T14:00:45Z</time><extensions><gpxtpx:TrackPointExtension><gpxtpx:hr>132</gpxtpx:hr><gpxtpx:cad>90</gpxtpx:cad></gpxtpx:TrackPointExtension></extensions></trkpt>
+      <!-- Same coordinates repeated = no GPS fix -->
+      <trkpt lat="50.8520" lon="3.3550"><ele>28</ele><time>2025-10-05T14:01:00Z</time><extensions><gpxtpx:TrackPointExtension><gpxtpx:hr>135</gpxtpx:hr><gpxtpx:cad>88</gpxtpx:cad></gpxtpx:TrackPointExtension></extensions></trkpt>
+      <trkpt lat="50.8520" lon="3.3550"><ele>28</ele><time>2025-10-05T14:01:30Z</time><extensions><gpxtpx:TrackPointExtension><gpxtpx:hr>130</gpxtpx:hr><gpxtpx:cad>85</gpxtpx:cad></gpxtpx:TrackPointExtension></extensions></trkpt>
+      <trkpt lat="50.8520" lon="3.3550"><ele>28</ele><time>2025-10-05T14:02:00Z</time><extensions><gpxtpx:TrackPointExtension><gpxtpx:hr>128</gpxtpx:hr><gpxtpx:cad>82</gpxtpx:cad></gpxtpx:TrackPointExtension></extensions></trkpt>
+      <!-- GPS signal returns -->
+      <trkpt lat="50.8560" lon="3.3600"><ele>30</ele><time>2025-10-05T14:02:30Z</time><extensions><gpxtpx:TrackPointExtension><gpxtpx:hr>125</gpxtpx:hr><gpxtpx:cad>86</gpxtpx:cad></gpxtpx:TrackPointExtension></extensions></trkpt>
+      <trkpt lat="50.8575" lon="3.3620"><ele>32</ele><time>2025-10-05T14:03:00Z</time><extensions><gpxtpx:TrackPointExtension><gpxtpx:hr>130</gpxtpx:hr><gpxtpx:cad>88</gpxtpx:cad></gpxtpx:TrackPointExtension></extensions></trkpt>
+      <!-- HR sensor drops (battery), cadence still works -->
+      <trkpt lat="50.8590" lon="3.3640"><ele>35</ele><time>2025-10-05T14:03:30Z</time><extensions><gpxtpx:TrackPointExtension><gpxtpx:cad>90</gpxtpx:cad></gpxtpx:TrackPointExtension></extensions></trkpt>
+      <trkpt lat="50.8605" lon="3.3660"><ele>38</ele><time>2025-10-05T14:04:00Z</time><extensions><gpxtpx:TrackPointExtension><gpxtpx:cad>85</gpxtpx:cad></gpxtpx:TrackPointExtension></extensions></trkpt>
+      <trkpt lat="50.8620" lon="3.3680"><ele>36</ele><time>2025-10-05T14:04:30Z</time><extensions><gpxtpx:TrackPointExtension><gpxtpx:cad>82</gpxtpx:cad></gpxtpx:TrackPointExtension></extensions></trkpt>
+    </trkseg>
+  </trk>
+</gpx>

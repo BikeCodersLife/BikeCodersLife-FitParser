@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gpx xmlns="http://www.topografix.com/GPX/1/1"
+     xmlns:gpxtpx="http://www.garmin.com/xmlschemas/TrackPointExtension/v2"
+     version="1.1" creator="Wahoo ELEMNT BOLT">
+  <metadata>
+    <name>Speed Sensor + GPS Combined</name>
+    <time>2025-08-10T08:00:00Z</time>
+  </metadata>
+  <trk>
+    <name>Speed Sensor + GPS Combined</name>
+    <trkseg>
+      <!-- Speed sensor provides more accurate speed than GPS-derived -->
+      <!-- GPS provides position, speed sensor overrides speed calculation -->
+      <trkpt lat="52.5200" lon="5.4700"><ele>-3</ele><time>2025-08-10T08:00:00Z</time><extensions><gpxtpx:TrackPointExtension><gpxtpx:hr>70</gpxtpx:hr><gpxtpx:cad>0</gpxtpx:cad><gpxtpx:speed>0.0</gpxtpx:speed></gpxtpx:TrackPointExtension></extensions></trkpt>
+      <trkpt lat="52.5205" lon="5.4710"><ele>-3</ele><time>2025-08-10T08:00:10Z</time><extensions><gpxtpx:TrackPointExtension><gpxtpx:hr>82</gpxtpx:hr><gpxtpx:cad>65</gpxtpx:cad><gpxtpx:speed>4.2</gpxtpx:speed></gpxtpx:TrackPointExtension></extensions></trkpt>
+      <trkpt lat="52.5215" lon="5.4730"><ele>-2</ele><time>2025-08-10T08:00:25Z</time><extensions><gpxtpx:TrackPointExtension><gpxtpx:hr>100</gpxtpx:hr><gpxtpx:cad>78</gpxtpx:cad><gpxtpx:speed>7.8</gpxtpx:speed></gpxtpx:TrackPointExtension></extensions></trkpt>
+      <trkpt lat="52.5230" lon="5.4760"><ele>-3</ele><time>2025-08-10T08:00:40Z</time><extensions><gpxtpx:TrackPointExtension><gpxtpx:hr>118</gpxtpx:hr><gpxtpx:cad>85</gpxtpx:cad><gpxtpx:speed>9.5</gpxtpx:speed></gpxtpx:TrackPointExtension></extensions></trkpt>
+      <trkpt lat="52.5250" lon="5.4800"><ele>-2</ele><time>2025-08-10T08:01:00Z</time><extensions><gpxtpx:TrackPointExtension><gpxtpx:hr>130</gpxtpx:hr><gpxtpx:cad>90</gpxtpx:cad><gpxtpx:speed>10.2</gpxtpx:speed></gpxtpx:TrackPointExtension></extensions></trkpt>
+      <trkpt lat="52.5275" lon="5.4845"><ele>-3</ele><time>2025-08-10T08:01:20Z</time><extensions><gpxtpx:TrackPointExtension><gpxtpx:hr>138</gpxtpx:hr><gpxtpx:cad>92</gpxtpx:cad><gpxtpx:speed>10.8</gpxtpx:speed></gpxtpx:TrackPointExtension></extensions></trkpt>
+      <trkpt lat="52.5300" lon="5.4890"><ele>-2</ele><time>2025-08-10T08:01:40Z</time><extensions><gpxtpx:TrackPointExtension><gpxtpx:hr>142</gpxtpx:hr><gpxtpx:cad>88</gpxtpx:cad><gpxtpx:speed>11.1</gpxtpx:speed></gpxtpx:TrackPointExtension></extensions></trkpt>
+      <trkpt lat="52.5320" lon="5.4920"><ele>-3</ele><time>2025-08-10T08:02:00Z</time><extensions><gpxtpx:TrackPointExtension><gpxtpx:hr>140</gpxtpx:hr><gpxtpx:cad>85</gpxtpx:cad><gpxtpx:speed>10.5</gpxtpx:speed></gpxtpx:TrackPointExtension></extensions></trkpt>
+      <trkpt lat="52.5335" lon="5.4940"><ele>-2</ele><time>2025-08-10T08:02:20Z</time><extensions><gpxtpx:TrackPointExtension><gpxtpx:hr>135</gpxtpx:hr><gpxtpx:cad>80</gpxtpx:cad><gpxtpx:speed>9.2</gpxtpx:speed></gpxtpx:TrackPointExtension></extensions></trkpt>
+      <trkpt lat="52.5345" lon="5.4955"><ele>-3</ele><time>2025-08-10T08:02:40Z</time><extensions><gpxtpx:TrackPointExtension><gpxtpx:hr>125</gpxtpx:hr><gpxtpx:cad>72</gpxtpx:cad><gpxtpx:speed>7.5</gpxtpx:speed></gpxtpx:TrackPointExtension></extensions></trkpt>
+    </trkseg>
+  </trk>
+</gpx>

@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gpx xmlns="http://www.topografix.com/GPX/1/1" version="1.1" creator="Strava Export">
+  <metadata>
+    <name>Phone GPS Only - No Sensors</name>
+    <time>2025-09-20T17:15:00Z</time>
+  </metadata>
+  <trk>
+    <name>Afternoon commute</name>
+    <trkseg>
+      <trkpt lat="51.9244" lon="4.4777"><ele>-1</ele><time>2025-09-20T17:15:00Z</time></trkpt>
+      <trkpt lat="51.9250" lon="4.4790"><ele>0</ele><time>2025-09-20T17:15:20Z</time></trkpt>
+      <trkpt lat="51.9260" lon="4.4810"><ele>0</ele><time>2025-09-20T17:15:40Z</time></trkpt>
+      <trkpt lat="51.9275" lon="4.4835"><ele>1</ele><time>2025-09-20T17:16:00Z</time></trkpt>
+      <trkpt lat="51.9290" lon="4.4860"><ele>0</ele><time>2025-09-20T17:16:30Z</time></trkpt>
+      <trkpt lat="51.9310" lon="4.4890"><ele>-1</ele><time>2025-09-20T17:17:00Z</time></trkpt>
+      <trkpt lat="51.9325" lon="4.4910"><ele>0</ele><time>2025-09-20T17:17:30Z</time></trkpt>
+      <trkpt lat="51.9340" lon="4.4925"><ele>1</ele><time>2025-09-20T17:18:00Z</time></trkpt>
+    </trkseg>
+  </trk>
+</gpx>

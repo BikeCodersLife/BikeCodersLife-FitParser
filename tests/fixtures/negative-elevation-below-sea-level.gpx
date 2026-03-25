@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gpx xmlns="http://www.topografix.com/GPX/1/1"
+     xmlns:gpxtpx="http://www.garmin.com/xmlschemas/TrackPointExtension/v2"
+     version="1.1" creator="Garmin Edge 1040">
+  <metadata>
+    <name>Dutch Polder Ride - Below Sea Level</name>
+    <time>2025-04-12T10:00:00Z</time>
+  </metadata>
+  <trk>
+    <name>Polder Ride Flevoland</name>
+    <trkseg>
+      <!-- Flevoland is 3-5 meters below sea level -->
+      <trkpt lat="52.5180" lon="5.4710"><ele>-4.2</ele><time>2025-04-12T10:00:00Z</time><extensions><gpxtpx:TrackPointExtension><gpxtpx:hr>75</gpxtpx:hr><gpxtpx:cad>70</gpxtpx:cad><gpxtpx:atemp>11.0</gpxtpx:atemp></gpxtpx:TrackPointExtension></extensions></trkpt>
+      <trkpt lat="52.5200" lon="5.4740"><ele>-4.5</ele><time>2025-04-12T10:00:30Z</time><extensions><gpxtpx:TrackPointExtension><gpxtpx:hr>95</gpxtpx:hr><gpxtpx:cad>80</gpxtpx:cad><gpxtpx:atemp>11.2</gpxtpx:atemp></gpxtpx:TrackPointExtension></extensions></trkpt>
+      <trkpt lat="52.5225" lon="5.4780"><ele>-3.8</ele><time>2025-04-12T10:01:00Z</time><extensions><gpxtpx:TrackPointExtension><gpxtpx:hr>110</gpxtpx:hr><gpxtpx:cad>85</gpxtpx:cad><gpxtpx:atemp>11.5</gpxtpx:atemp></gpxtpx:TrackPointExtension></extensions></trkpt>
+      <!-- Climb onto dike -->
+      <trkpt lat="52.5250" lon="5.4820"><ele>2.1</ele><time>2025-04-12T10:01:30Z</time><extensions><gpxtpx:TrackPointExtension><gpxtpx:hr>135</gpxtpx:hr><gpxtpx:cad>75</gpxtpx:cad><gpxtpx:atemp>12.0</gpxtpx:atemp></gpxtpx:TrackPointExtension></extensions></trkpt>
+      <trkpt lat="52.5275" lon="5.4860"><ele>4.5</ele><time>2025-04-12T10:02:00Z</time><extensions><gpxtpx:TrackPointExtension><gpxtpx:hr>145</gpxtpx:hr><gpxtpx:cad>68</gpxtpx:cad><gpxtpx:atemp>12.5</gpxtpx:atemp></gpxtpx:TrackPointExtension></extensions></trkpt>
+      <!-- Along dike top -->
+      <trkpt lat="52.5300" lon="5.4900"><ele>4.8</ele><time>2025-04-12T10:02:30Z</time><extensions><gpxtpx:TrackPointExtension><gpxtpx:hr>140</gpxtpx:hr><gpxtpx:cad>88</gpxtpx:cad><gpxtpx:atemp>13.0</gpxtpx:atemp></gpxtpx:TrackPointExtension></extensions></trkpt>
+      <!-- Descend back below sea level -->
+      <trkpt lat="52.5325" lon="5.4940"><ele>-2.0</ele><time>2025-04-12T10:03:00Z</time><extensions><gpxtpx:TrackPointExtension><gpxtpx:hr>120</gpxtpx:hr><gpxtpx:cad>92</gpxtpx:cad><gpxtpx:atemp>12.0</gpxtpx:atemp></gpxtpx:TrackPointExtension></extensions></trkpt>
+      <trkpt lat="52.5350" lon="5.4980"><ele>-5.1</ele><time>2025-04-12T10:03:30Z</time><extensions><gpxtpx:TrackPointExtension><gpxtpx:hr>110</gpxtpx:hr><gpxtpx:cad>85</gpxtpx:cad><gpxtpx:atemp>11.5</gpxtpx:atemp></gpxtpx:TrackPointExtension></extensions></trkpt>
+    </trkseg>
+  </trk>
+</gpx>
