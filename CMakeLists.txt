@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.15)
-project(fit-parser VERSION 1.0.0 LANGUAGES CXX)
+project(fit-parser VERSION 2.0.0 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -19,46 +19,49 @@ include_directories(${FIT_SDK_PATH})
 # FIT SDK source files
 file(GLOB FIT_SDK_SOURCES "${FIT_SDK_PATH}/*.cpp")
 
-# Shared sources (parser + writer, reused by both executables)
-set(LIB_SOURCES
+# --- pugixml (XML parser, fetched via FetchContent) ---
+include(FetchContent)
+FetchContent_Declare(
+    pugixml
+    GIT_REPOSITORY https://github.com/zeux/pugixml.git
+    GIT_TAG        v1.14
+)
+FetchContent_MakeAvailable(pugixml)
+
+# Application source files
+set(APP_SOURCES
+    src/main.cpp
     src/fit_parser.cpp
-    src/fit_writer.cpp
     src/json_output.cpp
+    src/gpx_parser.cpp
+    src/tcx_parser.cpp
+    src/fit_writer.cpp
 )
 
-# fit-parser executable
-add_executable(fit-parser src/main.cpp ${LIB_SOURCES} ${FIT_SDK_SOURCES})
+# Create executable
+add_executable(fit-parser ${APP_SOURCES} ${FIT_SDK_SOURCES})
 
-# gps-stripper executable (strips GPS lat/lon from start/end trim zones)
-add_executable(gps-stripper
-    src/main_stripper.cpp
-    src/gps_stripper.cpp
-    ${LIB_SOURCES}
-    ${FIT_SDK_SOURCES}
+# Link pugixml
+target_link_libraries(fit-parser PRIVATE pugixml::pugixml)
+
+# Compiler options
+target_compile_options(fit-parser PRIVATE
+    -O3                 # Maximum optimization
+    -Wall               # All warnings
+    -Wextra             # Extra warnings
+    -pedantic           # Strict ISO C++
 )
-
-# Compiler options (applied to both executables)
-foreach(TARGET fit-parser gps-stripper)
-    target_compile_options(${TARGET} PRIVATE
-        -O3                 # Maximum optimization
-        -Wall               # All warnings
-        -Wextra             # Extra warnings
-        -pedantic           # Strict ISO C++
-    )
-endforeach()
 
 # Static linking for portability (Linux only)
 if(UNIX AND NOT APPLE)
-    foreach(TARGET fit-parser gps-stripper)
-        target_link_options(${TARGET} PRIVATE
-            -static-libgcc
-            -static-libstdc++
-        )
-    endforeach()
+    target_link_options(fit-parser PRIVATE
+        -static-libgcc
+        -static-libstdc++
+    )
 endif()
 
-# Install targets
-install(TARGETS fit-parser gps-stripper DESTINATION bin)
+# Install target
+install(TARGETS fit-parser DESTINATION bin)
 
 # Enable testing
 enable_testing()
