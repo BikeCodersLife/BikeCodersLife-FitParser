@@ -5,52 +5,105 @@
 #include <fit_decode.hpp>
 #include <fit_mesg_broadcaster.hpp>
 #include <fit_record_mesg.hpp>
+#include <fit_session_mesg.hpp>
 
 /**
- * Listener for FIT record messages to extract coordinates
+ * Holds the FIT session-message totals captured during decoding.
+ * Each field's bool is independent because a session message can be
+ * present without all fields being valid (e.g. an indoor trainer file
+ * may carry avg_speed but no total_ascent).
+ */
+struct SessionTotals {
+    bool hasDistance = false;
+    double distanceM = 0.0;
+    bool hasAscent = false;
+    double ascentM = 0.0;
+    bool hasDescent = false;
+    double descentM = 0.0;
+    bool hasMaxSpeed = false;
+    double maxSpeedMs = 0.0;
+    bool hasAvgSpeed = false;
+    double avgSpeedMs = 0.0;
+    bool hasElapsed = false;
+    double elapsedSec = 0.0;
+    bool hasMoving = false;
+    double movingSec = 0.0;
+};
+
+/**
+ * Single listener that captures both per-record coordinate data and the
+ * (typically single) session-summary message in one pass through the FIT
+ * file. Cheaper than two listeners + a MesgBroadcaster.
  */
 class CoordinateListener : public fit::MesgListener {
 public:
     std::vector<Coordinate> coordinates;
-    
-    /**
-     * Called for each message in the FIT file
-     */
+    SessionTotals session;
+
     void OnMesg(fit::Mesg& mesg) override {
-        // Check if this is a record message
-        if (mesg.GetNum() == FIT_MESG_NUM_RECORD) {
-            // Cast to RecordMesg
+        const auto num = mesg.GetNum();
+
+        if (num == FIT_MESG_NUM_RECORD) {
             fit::RecordMesg recordMesg(mesg);
-            
-            // Only process records with valid GPS coordinates
+
             if (recordMesg.IsPositionLatValid() && recordMesg.IsPositionLongValid()) {
                 Coordinate coord;
-                
-                // Convert semicircles to degrees
-                // FIT format stores coordinates as semicircles (2^31 semicircles = 180 degrees)
+
+                // FIT semicircles → degrees: 2^31 semicircles = 180°
                 coord.lat = recordMesg.GetPositionLat() * (180.0 / std::pow(2, 31));
                 coord.lon = recordMesg.GetPositionLong() * (180.0 / std::pow(2, 31));
-                
-                // Elevation in meters (may be invalid)
+
                 coord.elevation = recordMesg.IsAltitudeValid() ? recordMesg.GetAltitude() : 0.0;
-                
-                // Timestamp (FIT_DATE_TIME is uint32, seconds since FIT epoch)
                 coord.timestamp = recordMesg.IsTimestampValid() ? recordMesg.GetTimestamp() : 0;
-                
+
                 // Health Data
                 coord.hasHeartRate = recordMesg.IsHeartRateValid();
                 coord.heartRate = coord.hasHeartRate ? recordMesg.GetHeartRate() : 0;
-                
+
                 coord.hasPower = recordMesg.IsPowerValid();
                 coord.power = coord.hasPower ? recordMesg.GetPower() : 0;
-                
+
                 coord.hasCadence = recordMesg.IsCadenceValid();
                 coord.cadence = coord.hasCadence ? recordMesg.GetCadence() : 0;
-                
+
                 coord.hasTemperature = recordMesg.IsTemperatureValid();
                 coord.temperature = coord.hasTemperature ? recordMesg.GetTemperature() : 0;
-                
+
                 coordinates.push_back(coord);
+            }
+            return;
+        }
+
+        if (num == FIT_MESG_NUM_SESSION) {
+            fit::SessionMesg sessionMesg(mesg);
+
+            if (sessionMesg.IsTotalDistanceValid()) {
+                session.hasDistance = true;
+                session.distanceM = sessionMesg.GetTotalDistance();
+            }
+            if (sessionMesg.IsTotalAscentValid()) {
+                session.hasAscent = true;
+                session.ascentM = sessionMesg.GetTotalAscent();
+            }
+            if (sessionMesg.IsTotalDescentValid()) {
+                session.hasDescent = true;
+                session.descentM = sessionMesg.GetTotalDescent();
+            }
+            if (sessionMesg.IsMaxSpeedValid()) {
+                session.hasMaxSpeed = true;
+                session.maxSpeedMs = sessionMesg.GetMaxSpeed();
+            }
+            if (sessionMesg.IsAvgSpeedValid()) {
+                session.hasAvgSpeed = true;
+                session.avgSpeedMs = sessionMesg.GetAvgSpeed();
+            }
+            if (sessionMesg.IsTotalElapsedTimeValid()) {
+                session.hasElapsed = true;
+                session.elapsedSec = sessionMesg.GetTotalElapsedTime();
+            }
+            if (sessionMesg.IsTotalTimerTimeValid()) {
+                session.hasMoving = true;
+                session.movingSec = sessionMesg.GetTotalTimerTime();
             }
         }
     }
@@ -83,7 +136,7 @@ RideStatistic FitParser::extractCoordinates() {
     stats.durationMin = 0.0;
     stats.startTime = 0;
     stats.endTime = 0;
-    
+
     // Initialize health stats
     stats.avgHeartRate = 0;
     stats.maxHeartRate = 0;
@@ -96,6 +149,37 @@ RideStatistic FitParser::extractCoordinates() {
     stats.hasHeartRateData = false;
     stats.hasPowerData = false;
     stats.hasCadenceData = false;
+
+    // Roadmap #156: copy session totals through to the result. PHP
+    // prefers these over the Haversine sum below when present.
+    if (listener.session.hasDistance) {
+        stats.hasSessionDistance = true;
+        stats.sessionDistanceKm = std::round((listener.session.distanceM / 1000.0) * 100.0) / 100.0;
+    }
+    if (listener.session.hasAscent) {
+        stats.hasSessionAscent = true;
+        stats.sessionElevationGainM = listener.session.ascentM;
+    }
+    if (listener.session.hasDescent) {
+        stats.hasSessionDescent = true;
+        stats.sessionElevationLossM = listener.session.descentM;
+    }
+    if (listener.session.hasMaxSpeed) {
+        stats.hasSessionMaxSpeed = true;
+        stats.sessionMaxSpeedKmh = std::round((listener.session.maxSpeedMs * 3.6) * 10.0) / 10.0;
+    }
+    if (listener.session.hasAvgSpeed) {
+        stats.hasSessionAvgSpeed = true;
+        stats.sessionAvgSpeedKmh = std::round((listener.session.avgSpeedMs * 3.6) * 10.0) / 10.0;
+    }
+    if (listener.session.hasElapsed) {
+        stats.hasSessionElapsed = true;
+        stats.sessionElapsedSec = listener.session.elapsedSec;
+    }
+    if (listener.session.hasMoving) {
+        stats.hasSessionMoving = true;
+        stats.sessionMovingSec = listener.session.movingSec;
+    }
 
     if (stats.coordinates.empty()) {
         return stats;

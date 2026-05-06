@@ -89,6 +89,31 @@ void JsonOutput::writeCoordinates(const RideStatistic& stats) {
     std::cout << "    \"maxSpeed\": " << std::fixed << std::setprecision(1) << stats.maxSpeed << "," << std::endl;
     std::cout << "    \"movingTimeSec\": " << std::fixed << std::setprecision(0) << stats.movingTimeSec << "," << std::endl;
 
+    // Roadmap #156: emit FIT session totals when present + valid. PHP
+    // prefers these (cycle-computer odometer, barometric ascent, sustained
+    // max speed) over Haversine-from-1Hz-GPS recomputation.
+    if (stats.hasSessionDistance) {
+        std::cout << "    \"sessionDistanceKm\": " << std::fixed << std::setprecision(2) << stats.sessionDistanceKm << "," << std::endl;
+    }
+    if (stats.hasSessionAscent) {
+        std::cout << "    \"sessionElevationGainM\": " << std::fixed << std::setprecision(1) << stats.sessionElevationGainM << "," << std::endl;
+    }
+    if (stats.hasSessionDescent) {
+        std::cout << "    \"sessionElevationLossM\": " << std::fixed << std::setprecision(1) << stats.sessionElevationLossM << "," << std::endl;
+    }
+    if (stats.hasSessionMaxSpeed) {
+        std::cout << "    \"sessionMaxSpeedKmh\": " << std::fixed << std::setprecision(1) << stats.sessionMaxSpeedKmh << "," << std::endl;
+    }
+    if (stats.hasSessionAvgSpeed) {
+        std::cout << "    \"sessionAvgSpeedKmh\": " << std::fixed << std::setprecision(1) << stats.sessionAvgSpeedKmh << "," << std::endl;
+    }
+    if (stats.hasSessionElapsed) {
+        std::cout << "    \"sessionElapsedSec\": " << std::fixed << std::setprecision(0) << stats.sessionElapsedSec << "," << std::endl;
+    }
+    if (stats.hasSessionMoving) {
+        std::cout << "    \"sessionMovingSec\": " << std::fixed << std::setprecision(0) << stats.sessionMovingSec << "," << std::endl;
+    }
+
     std::cout << "    \"startTime\": \"" << timestampToIso8601(stats.startTime) << "\"," << std::endl;
     std::cout << "    \"endTime\": \"" << timestampToIso8601(stats.endTime) << "\"" << std::endl;
     std::cout << "  }" << std::endl;

@@ -62,9 +62,10 @@ void printUsage(const char* programName) {
  * Print version information
  */
 void printVersion() {
-    std::cout << "BikeCodersLife FIT Parser v2.0.0" << std::endl;
+    std::cout << "BikeCodersLife FIT Parser v2.1.0" << std::endl;
     std::cout << "Built with Garmin FIT SDK + pugixml" << std::endl;
     std::cout << "Supports: FIT, GPX, TCX input | FIT, JSON output" << std::endl;
+    std::cout << "v2.1.0 (#156): emit FIT session totals (sessionDistanceKm, sessionElevationGainM/LossM, sessionMaxSpeedKmh, sessionAvgSpeedKmh, sessionElapsedSec, sessionMovingSec)" << std::endl;
 }
 
 /**
@@ -123,7 +124,12 @@ std::string getFileExtension(const std::string& path) {
 }
 
 /**
- * Convert a ParsedActivity to a RideStatistic for JSON output (backward compatibility)
+ * Convert a ParsedActivity (GPX/TCX) to a RideStatistic for JSON output.
+ *
+ * GPX/TCX have no FIT-style "session" message but the parsers compute the
+ * same totals from track data + explicit elevation tags. Surface them as
+ * the session-summary fields so PHP can apply identical preference rules
+ * across sources (#156).
  */
 RideStatistic activityToRideStatistic(const ParsedActivity& activity) {
     RideStatistic stats;
@@ -135,6 +141,33 @@ RideStatistic activityToRideStatistic(const ParsedActivity& activity) {
     // Round for consistency
     stats.distanceKm = std::round(stats.distanceKm * 100.0) / 100.0;
     stats.durationMin = std::round(stats.durationMin * 100.0) / 100.0;
+
+    // Surface parsed totals as session-summary fields for #156. GPX/TCX
+    // always have distance + duration; ascent/descent are populated only
+    // when the source carried an <ele> stream the parser could
+    // differentiate.
+    if (activity.totalDistanceM > 0.0) {
+        stats.hasSessionDistance = true;
+        stats.sessionDistanceKm = stats.distanceKm;
+    }
+    if (activity.totalAscentM > 0.0) {
+        stats.hasSessionAscent = true;
+        stats.sessionElevationGainM = activity.totalAscentM;
+    }
+    if (activity.totalDescentM > 0.0) {
+        stats.hasSessionDescent = true;
+        stats.sessionElevationLossM = activity.totalDescentM;
+    }
+    if (activity.durationSec > 0.0) {
+        stats.hasSessionElapsed = true;
+        stats.sessionElapsedSec = activity.durationSec;
+        // GPX/TCX don't separate moving-time from elapsed-time; treat
+        // elapsed as moving so the field is populated for downstream
+        // averageSpeed math. FIT files override this with the real
+        // total_timer_time when present.
+        stats.hasSessionMoving = true;
+        stats.sessionMovingSec = activity.durationSec;
+    }
 
     // Convert TrackPoints to Coordinates
     for (const auto& pt : activity.points) {

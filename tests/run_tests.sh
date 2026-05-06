@@ -186,8 +186,8 @@ fi
 
 # Test: --version
 TOTAL=$((TOTAL + 1))
-if version=$("$PARSER" --version 2>&1) && echo "$version" | grep -q "2.0"; then
-    pass "--version shows 2.0"
+if version=$("$PARSER" --version 2>&1) && echo "$version" | grep -qE "v2\.[0-9]+"; then
+    pass "--version shows v2.x"
 else
     fail "--version (got: $version)"
 fi

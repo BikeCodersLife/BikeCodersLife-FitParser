@@ -28,7 +28,19 @@ struct Coordinate {
 };
 
 /**
- * Ride statistics extracted from FIT file
+ * Ride statistics extracted from FIT file.
+ *
+ * `distanceKm` / `durationMin` are derived from the per-coordinate record
+ * stream. Health stats (HR / power / cadence) and per-second speed come
+ * from the same RECORD messages.
+ *
+ * The `session*` fields below carry the FIT session-message totals that
+ * the cycle computer / head unit recorded — its odometer reading,
+ * barometric ascent, sustained-speed peak, total moving / elapsed time.
+ * Populated only when the FIT file contains a SESSION message AND the
+ * field passed FIT SDK validity. Roadmap #156: PHP prefers these over
+ * the Haversine sum because recomputed distance from a 1 Hz GPS stream
+ * is structurally short by 2-3% on rides with curvy roads.
  */
 struct RideStatistic {
     std::vector<Coordinate> coordinates;
@@ -36,7 +48,7 @@ struct RideStatistic {
     double durationMin;
     uint32_t startTime;
     uint32_t endTime;
-    
+
     // Health Stats
     double avgHeartRate;
     double maxHeartRate;
@@ -51,6 +63,23 @@ struct RideStatistic {
     bool hasHeartRateData;
     bool hasPowerData;
     bool hasCadenceData;
+
+    // FIT session-message totals (#156).
+    bool hasSessionDistance = false;
+    bool hasSessionAscent = false;
+    bool hasSessionDescent = false;
+    bool hasSessionMaxSpeed = false;
+    bool hasSessionAvgSpeed = false;
+    bool hasSessionElapsed = false;
+    bool hasSessionMoving = false;
+
+    double sessionDistanceKm = 0.0;      // session.total_distance / 1000
+    double sessionElevationGainM = 0.0;  // session.total_ascent
+    double sessionElevationLossM = 0.0;  // session.total_descent
+    double sessionMaxSpeedKmh = 0.0;     // session.max_speed * 3.6
+    double sessionAvgSpeedKmh = 0.0;     // session.avg_speed * 3.6
+    double sessionElapsedSec = 0.0;      // session.total_elapsed_time
+    double sessionMovingSec = 0.0;       // session.total_timer_time
 };
 
 /**

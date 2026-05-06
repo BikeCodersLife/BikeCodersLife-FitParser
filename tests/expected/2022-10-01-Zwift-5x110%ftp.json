@@ -3923,6 +3923,13 @@
     "avgSpeed": 28.5,
     "maxSpeed": 60.2,
     "movingTimeSec": 3906,
+    "sessionDistanceKm": 30.78,
+    "sessionElevationGainM": 258.0,
+    "sessionElevationLossM": 0.0,
+    "sessionMaxSpeedKmh": 58.8,
+    "sessionAvgSpeedKmh": 28.3,
+    "sessionElapsedSec": 3909,
+    "sessionMovingSec": 3910,
     "startTime": "2022-10-01T13:57:42Z",
     "endTime": "2022-10-01T15:02:51Z"
   }
