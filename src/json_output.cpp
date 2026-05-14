@@ -114,6 +114,29 @@ void JsonOutput::writeCoordinates(const RideStatistic& stats) {
         std::cout << "    \"sessionMovingSec\": " << std::fixed << std::setprecision(0) << stats.sessionMovingSec << "," << std::endl;
     }
 
+    // FIT FileId + Session metadata. PHP reads sport / sub_sport /
+    // manufacturer / isIndoor to flag trainer rides (MyWhoosh, Zwift,
+    // Rouvy, etc.) automatically — without these the activity-log chip
+    // has to be flipped by hand on every upload.
+    if (stats.hasManufacturer) {
+        std::cout << "    \"manufacturer\": " << stats.manufacturer << "," << std::endl;
+    }
+    if (stats.hasGarminProduct) {
+        std::cout << "    \"garminProduct\": " << stats.garminProduct << "," << std::endl;
+    }
+    if (stats.hasProductName && !stats.productName.empty()) {
+        std::cout << "    \"productName\": \"" << escapeJson(stats.productName) << "\"," << std::endl;
+    }
+    if (stats.hasSport) {
+        std::cout << "    \"sport\": " << static_cast<int>(stats.sport) << "," << std::endl;
+    }
+    if (stats.hasSubSport) {
+        std::cout << "    \"subSport\": " << static_cast<int>(stats.subSport) << "," << std::endl;
+    }
+    // Always emit isIndoor so PHP can rely on its presence (true or false)
+    // and skip the legacy name heuristic when this binary is in use.
+    std::cout << "    \"isIndoor\": " << (stats.isIndoor ? "true" : "false") << "," << std::endl;
+
     std::cout << "    \"startTime\": \"" << timestampToIso8601(stats.startTime) << "\"," << std::endl;
     std::cout << "    \"endTime\": \"" << timestampToIso8601(stats.endTime) << "\"" << std::endl;
     std::cout << "  }" << std::endl;

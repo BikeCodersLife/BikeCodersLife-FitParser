@@ -2,10 +2,13 @@
 #include <fstream>
 #include <stdexcept>
 #include <cmath>
+#include <algorithm>
 #include <fit_decode.hpp>
 #include <fit_mesg_broadcaster.hpp>
 #include <fit_record_mesg.hpp>
 #include <fit_session_mesg.hpp>
+#include <fit_file_id_mesg.hpp>
+#include <fit_profile.hpp>
 
 /**
  * Holds the FIT session-message totals captured during decoding.
@@ -28,7 +31,40 @@ struct SessionTotals {
     double elapsedSec = 0.0;
     bool hasMoving = false;
     double movingSec = 0.0;
+    bool hasSport = false;
+    uint8_t sport = 0;
+    bool hasSubSport = false;
+    uint8_t subSport = 0;
 };
+
+/**
+ * FIT FileId metadata captured for indoor / source-app detection.
+ * Populated once per file (FileId is the first message in every FIT file).
+ */
+struct FileIdInfo {
+    bool hasManufacturer = false;
+    uint16_t manufacturer = 0;
+    bool hasGarminProduct = false;
+    uint16_t garminProduct = 0;
+    bool hasProductName = false;
+    std::string productName;
+};
+
+/**
+ * Lossy FIT_WSTRING (std::wstring) → UTF-8 std::string conversion. All
+ * known indoor-app product_name values ("MyWhoosh", "Zwift", "Rouvy",
+ * "Tacx Training Application", etc.) are pure ASCII, so a naive cast is
+ * fine for matching. Non-ASCII characters get replaced with '?' rather
+ * than producing mojibake.
+ */
+static std::string wstringToUtf8Lossy(const std::wstring& w) {
+    std::string out;
+    out.reserve(w.size());
+    for (wchar_t c : w) {
+        out.push_back((c >= 0 && c < 128) ? static_cast<char>(c) : '?');
+    }
+    return out;
+}
 
 /**
  * Single listener that captures both per-record coordinate data and the
@@ -39,9 +75,27 @@ class CoordinateListener : public fit::MesgListener {
 public:
     std::vector<Coordinate> coordinates;
     SessionTotals session;
+    FileIdInfo fileId;
 
     void OnMesg(fit::Mesg& mesg) override {
         const auto num = mesg.GetNum();
+
+        if (num == FIT_MESG_NUM_FILE_ID) {
+            fit::FileIdMesg fileIdMesg(mesg);
+            if (fileIdMesg.IsManufacturerValid()) {
+                fileId.hasManufacturer = true;
+                fileId.manufacturer = fileIdMesg.GetManufacturer();
+            }
+            if (fileIdMesg.IsGarminProductValid()) {
+                fileId.hasGarminProduct = true;
+                fileId.garminProduct = fileIdMesg.GetGarminProduct();
+            }
+            if (fileIdMesg.IsProductNameValid()) {
+                fileId.hasProductName = true;
+                fileId.productName = wstringToUtf8Lossy(fileIdMesg.GetProductName());
+            }
+            return;
+        }
 
         if (num == FIT_MESG_NUM_RECORD) {
             fit::RecordMesg recordMesg(mesg);
@@ -104,6 +158,14 @@ public:
             if (sessionMesg.IsTotalTimerTimeValid()) {
                 session.hasMoving = true;
                 session.movingSec = sessionMesg.GetTotalTimerTime();
+            }
+            if (sessionMesg.IsSportValid()) {
+                session.hasSport = true;
+                session.sport = static_cast<uint8_t>(sessionMesg.GetSport());
+            }
+            if (sessionMesg.IsSubSportValid()) {
+                session.hasSubSport = true;
+                session.subSport = static_cast<uint8_t>(sessionMesg.GetSubSport());
             }
         }
     }
@@ -179,6 +241,53 @@ RideStatistic FitParser::extractCoordinates() {
     if (listener.session.hasMoving) {
         stats.hasSessionMoving = true;
         stats.sessionMovingSec = listener.session.movingSec;
+    }
+
+    // Indoor / source-app metadata captured from the FileId + Session
+    // messages, with isIndoor derived from the most reliable signals only:
+    //   - sub_sport == INDOOR_CYCLING (6) or VIRTUAL_ACTIVITY (58)
+    //   - manufacturer == ZWIFT (260) / ZWIFT_BYTE (144) / MYWHOOSH (331)
+    //     / BKOOL (67) — apps that ship *only* indoor experiences
+    // Tacx is intentionally NOT in the manufacturer auto-flag list because
+    // the same vendor id appears on Tacx outdoor head units; a Tacx file
+    // still flags indoor when its sub_sport says so.
+    if (listener.fileId.hasManufacturer) {
+        stats.hasManufacturer = true;
+        stats.manufacturer = listener.fileId.manufacturer;
+    }
+    if (listener.fileId.hasGarminProduct) {
+        stats.hasGarminProduct = true;
+        stats.garminProduct = listener.fileId.garminProduct;
+    }
+    if (listener.fileId.hasProductName) {
+        stats.hasProductName = true;
+        stats.productName = listener.fileId.productName;
+    }
+    if (listener.session.hasSport) {
+        stats.hasSport = true;
+        stats.sport = listener.session.sport;
+    }
+    if (listener.session.hasSubSport) {
+        stats.hasSubSport = true;
+        stats.subSport = listener.session.subSport;
+    }
+
+    if (stats.hasSubSport
+        && (stats.subSport == FIT_SUB_SPORT_INDOOR_CYCLING
+            || stats.subSport == FIT_SUB_SPORT_VIRTUAL_ACTIVITY)) {
+        stats.isIndoor = true;
+    }
+    if (!stats.isIndoor && stats.hasManufacturer) {
+        switch (stats.manufacturer) {
+            case FIT_MANUFACTURER_ZWIFT:
+            case FIT_MANUFACTURER_ZWIFT_BYTE:
+            case FIT_MANUFACTURER_MYWHOOSH:
+            case FIT_MANUFACTURER_BKOOL:
+                stats.isIndoor = true;
+                break;
+            default:
+                break;
+        }
     }
 
     if (stats.coordinates.empty()) {

@@ -80,6 +80,23 @@ struct RideStatistic {
     double sessionAvgSpeedKmh = 0.0;     // session.avg_speed * 3.6
     double sessionElapsedSec = 0.0;      // session.total_elapsed_time
     double sessionMovingSec = 0.0;       // session.total_timer_time
+
+    // FIT FileId + Session metadata used for indoor / trainer detection.
+    // PHP previously had dead code looking for these fields in the JSON —
+    // the binary now emits them so trainer rides (MyWhoosh / Zwift / Rouvy
+    // / Tacx Training / BKOOL etc.) auto-flag as indoor instead of needing
+    // the manual chip toggle on the activity log.
+    bool hasManufacturer = false;
+    uint16_t manufacturer = 0;       // FIT_MANUFACTURER enum (e.g. 260=Zwift, 331=MyWhoosh)
+    bool hasGarminProduct = false;
+    uint16_t garminProduct = 0;      // FIT_GARMIN_PRODUCT enum (e.g. 20533=Tacx Training App Win)
+    bool hasProductName = false;
+    std::string productName;         // Raw product_name string (ASCII subset of UTF-8). May be empty.
+    bool hasSport = false;
+    uint8_t sport = 0;               // FIT_SPORT enum (2=CYCLING, 10=TRAINING)
+    bool hasSubSport = false;
+    uint8_t subSport = 0;            // FIT_SUB_SPORT enum (6=INDOOR_CYCLING, 58=VIRTUAL_ACTIVITY)
+    bool isIndoor = false;           // Computed flag — true when sub_sport or manufacturer marks the ride as indoor.
 };
 
 /**
