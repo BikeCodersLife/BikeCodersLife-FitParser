@@ -72,6 +72,17 @@ void FitWriter::write(const ParsedActivity& activity, const std::string& outputP
     TrackPoint prevPoint;
     bool hasPrevPoint = false;
 
+    // GPS-derived speed only: hold the previous accepted speed so a single
+    // doubled-distance sample (a GPS position glitch) cannot spike the
+    // session/lap max. A bicycle cannot gain more than ~5 m/s² (18 km/h per
+    // second) even sprinting or on a steep descent; a derived speed implying
+    // more than that between consecutive samples is a position artefact, not
+    // a real burst. v2.1.3 — fixes the 65 km/h-from-41 km/h max-speed
+    // overshoot on Strava-synth rides that lack explicit <speed>.
+    constexpr double kMaxPlausibleAccelMs2 = 5.0;
+    float prevAcceptedSpeedMs = 0.0f;
+    bool hasAcceptedSpeed = false;
+
     for (const auto& point : activity.points) {
         fit::RecordMesg record;
 
@@ -138,6 +149,7 @@ void FitWriter::write(const ParsedActivity& activity, const std::string& outputP
         // = avgSpeed (the "MAX = AVG" symptom on every Strava-synth ride).
         float pointSpeedMs = point.speed;
         bool pointHasSpeed = point.hasSpeed && point.speed > 0.0f;
+        bool speedWasDerived = false;
         if (!pointHasSpeed && hasPrevPoint
             && point.timestamp > prevPoint.timestamp
             && point.distance > prevPoint.distance) {
@@ -146,6 +158,19 @@ void FitWriter::write(const ParsedActivity& activity, const std::string& outputP
             if (dt > 0 && segMeters > 0.0) {
                 pointSpeedMs = static_cast<float>(segMeters / static_cast<double>(dt));
                 pointHasSpeed = true;
+                speedWasDerived = true;
+                // Reject single-sample GPS-distance glitches: a derived speed
+                // implying impossible acceleration vs the previous accepted
+                // sample is a position spike, not a real burst. Hold the prior
+                // speed so the glitch neither inflates the session max nor
+                // leaks into the per-record stream that consumers smooth.
+                if (hasAcceptedSpeed) {
+                    double accel = (static_cast<double>(pointSpeedMs) - prevAcceptedSpeedMs)
+                                 / static_cast<double>(dt);
+                    if (accel > kMaxPlausibleAccelMs2) {
+                        pointSpeedMs = prevAcceptedSpeedMs;
+                    }
+                }
             }
         }
         if (pointHasSpeed) {
@@ -153,6 +178,10 @@ void FitWriter::write(const ParsedActivity& activity, const std::string& outputP
             totalSpeed += pointSpeedMs;
             speedCount++;
             if (pointSpeedMs > maxSpeed) maxSpeed = pointSpeedMs;
+            if (speedWasDerived) {
+                prevAcceptedSpeedMs = pointSpeedMs;
+                hasAcceptedSpeed = true;
+            }
         }
 
         encode.Write(record);
