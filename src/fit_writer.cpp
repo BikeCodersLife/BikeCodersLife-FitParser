@@ -74,9 +74,15 @@ void FitWriter::write(const ParsedActivity& activity, const std::string& outputP
             record.SetTimestamp(point.timestamp);
         }
 
-        // Position
-        record.SetPositionLat(degreesToSemicircles(point.lat));
-        record.SetPositionLong(degreesToSemicircles(point.lon));
+        // Position — omit entirely when hasPosition=false so gps-stripper
+        // can redact the start/end trim zones. Per FIT spec a RECORD without
+        // position is valid; the head unit / Strava will just render a gap
+        // in the trace, which is the privacy guarantee we promise. Before
+        // this gate, every stripped point still leaked its original GPS.
+        if (point.hasPosition) {
+            record.SetPositionLat(degreesToSemicircles(point.lat));
+            record.SetPositionLong(degreesToSemicircles(point.lon));
+        }
 
         // Elevation
         if (point.hasElevation) {
@@ -236,9 +242,33 @@ void FitWriter::write(const std::string& outputPath, const RideStatistic& stats)
         TrackPoint pt;
         pt.lat = coord.lat;
         pt.lon = coord.lon;
+        // gpsValid=false → hasPosition=false so the writer omits lat/lon.
+        // Without this propagation, gps-stripper marked the trim zone but
+        // the writer happily wrote the original coordinates back out, so
+        // privacy stripping was a no-op for every archived ride.
+        pt.hasPosition = coord.gpsValid;
         pt.elevation = coord.elevation;
         pt.hasElevation = (coord.elevation != 0.0);
         pt.timestamp = coord.timestamp;
+
+        // Sensor fields — these were silently dropped by the previous
+        // conversion (only lat/lon/elevation/timestamp copied), so the
+        // gps-strip → re-write cycle wiped HR / power / cadence /
+        // temperature / speed from every archived FIT.
+        pt.heart_rate = coord.heartRate;
+        pt.hasHeartRate = coord.hasHeartRate;
+        pt.cadence = coord.cadence;
+        pt.hasCadence = coord.hasCadence;
+        pt.power = coord.power;
+        pt.hasPower = coord.hasPower;
+        pt.temperature = coord.temperature;
+        pt.hasTemperature = coord.hasTemperature;
+        // Coordinate.speed is km/h (computed from GPS deltas); TrackPoint.speed
+        // is m/s (FIT-native). Convert so the FIT writer doesn't silently
+        // serialise a 3.6× over-stated speed.
+        pt.speed = static_cast<float>(coord.speed / 3.6);
+        pt.hasSpeed = coord.hasSpeed;
+
         activity.points.push_back(pt);
     }
 

@@ -100,31 +100,47 @@ public:
         if (num == FIT_MESG_NUM_RECORD) {
             fit::RecordMesg recordMesg(mesg);
 
-            if (recordMesg.IsPositionLatValid() && recordMesg.IsPositionLongValid()) {
-                Coordinate coord;
+            // Always create a coordinate, even when position is absent.
+            // FIT records may legitimately ship without lat/lon — pause
+            // segments, indoor trainers, and (most importantly for us)
+            // the start/end trim zones our own gps-stripper produces.
+            // Previously this branch was gated on position validity and
+            // silently discarded the entire record, taking HR / power /
+            // cadence / temperature with it. We mark such points as
+            // `gpsValid=false` so the writer can later choose to
+            // re-emit them without position.
+            Coordinate coord;
 
+            bool hasLat = recordMesg.IsPositionLatValid();
+            bool hasLon = recordMesg.IsPositionLongValid();
+            if (hasLat && hasLon) {
                 // FIT semicircles → degrees: 2^31 semicircles = 180°
                 coord.lat = recordMesg.GetPositionLat() * (180.0 / std::pow(2, 31));
                 coord.lon = recordMesg.GetPositionLong() * (180.0 / std::pow(2, 31));
-
-                coord.elevation = recordMesg.IsAltitudeValid() ? recordMesg.GetAltitude() : 0.0;
-                coord.timestamp = recordMesg.IsTimestampValid() ? recordMesg.GetTimestamp() : 0;
-
-                // Health Data
-                coord.hasHeartRate = recordMesg.IsHeartRateValid();
-                coord.heartRate = coord.hasHeartRate ? recordMesg.GetHeartRate() : 0;
-
-                coord.hasPower = recordMesg.IsPowerValid();
-                coord.power = coord.hasPower ? recordMesg.GetPower() : 0;
-
-                coord.hasCadence = recordMesg.IsCadenceValid();
-                coord.cadence = coord.hasCadence ? recordMesg.GetCadence() : 0;
-
-                coord.hasTemperature = recordMesg.IsTemperatureValid();
-                coord.temperature = coord.hasTemperature ? recordMesg.GetTemperature() : 0;
-
-                coordinates.push_back(coord);
+                coord.gpsValid = true;
+            } else {
+                coord.lat = 0.0;
+                coord.lon = 0.0;
+                coord.gpsValid = false;
             }
+
+            coord.elevation = recordMesg.IsAltitudeValid() ? recordMesg.GetAltitude() : 0.0;
+            coord.timestamp = recordMesg.IsTimestampValid() ? recordMesg.GetTimestamp() : 0;
+
+            // Health Data
+            coord.hasHeartRate = recordMesg.IsHeartRateValid();
+            coord.heartRate = coord.hasHeartRate ? recordMesg.GetHeartRate() : 0;
+
+            coord.hasPower = recordMesg.IsPowerValid();
+            coord.power = coord.hasPower ? recordMesg.GetPower() : 0;
+
+            coord.hasCadence = recordMesg.IsCadenceValid();
+            coord.cadence = coord.hasCadence ? recordMesg.GetCadence() : 0;
+
+            coord.hasTemperature = recordMesg.IsTemperatureValid();
+            coord.temperature = coord.hasTemperature ? recordMesg.GetTemperature() : 0;
+
+            coordinates.push_back(coord);
             return;
         }
 
@@ -323,8 +339,12 @@ RideStatistic FitParser::extractCoordinates() {
     for (size_t i = 0; i < stats.coordinates.size(); ++i) {
         auto& point = stats.coordinates[i];
 
-        // Distance and per-point speed
-        if (i > 0) {
+        // Distance and per-point speed — only when both endpoints actually
+        // have a GPS fix. Without this, a record we now keep (paused
+        // segment, indoor, or the start/end trim zone) with lat/lon=0
+        // would Haversine a giant phantom segment from the equator and
+        // either inflate total distance or zero it out.
+        if (i > 0 && point.gpsValid && stats.coordinates[i-1].gpsValid) {
             const auto& prev = stats.coordinates[i-1];
             double segmentMeters = calculateDistance(prev.lat, prev.lon, point.lat, point.lon);
             totalDistanceMeters += segmentMeters;

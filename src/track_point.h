@@ -27,6 +27,14 @@ struct TrackPoint {
     bool hasTemperature = false;
     bool hasSpeed = false;
     bool hasElevation = false;
+    /**
+     * False when the FIT writer must omit `position_lat` / `position_long`
+     * for this record — used by gps-stripper to redact start/end trim
+     * zones while keeping all other sensor data (HR / power / cadence /
+     * temperature / elevation / timestamp) intact, per FIT spec which
+     * allows RECORD messages without position fields.
+     */
+    bool hasPosition = true;
 };
 
 /**
