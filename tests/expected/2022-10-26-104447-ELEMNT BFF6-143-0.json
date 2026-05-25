@@ -1,6 +1,7 @@
 {
   "coordinates": [
-    {"lat": 52.578564, "lon": 4.696612, "elevation": -9.4, "speed": 26.9, "timestamp": "2022-10-26T10:44:48Z"},
+    {"lat": 0.000000, "lon": 0.000000, "elevation": 0.0, "timestamp": "2022-10-26T10:44:47Z"},
+    {"lat": 52.578564, "lon": 4.696612, "elevation": -9.4, "timestamp": "2022-10-26T10:44:48Z"},
     {"lat": 52.578629, "lon": 4.696641, "elevation": -9.6, "speed": 26.9, "power": 194, "cadence": 94, "timestamp": "2022-10-26T10:44:49Z"},
     {"lat": 52.578709, "lon": 4.696674, "elevation": -9.6, "speed": 33.1, "heartRate": 111, "power": 192, "cadence": 96, "timestamp": "2022-10-26T10:44:50Z"},
     {"lat": 52.578773, "lon": 4.696702, "elevation": -9.4, "speed": 26.8, "heartRate": 113, "power": 181, "cadence": 95, "timestamp": "2022-10-26T10:44:51Z"},
@@ -4515,12 +4516,13 @@
     {"lat": 52.641998, "lon": 5.051362, "elevation": -15.8, "speed": 36.9, "heartRate": 177, "power": 34, "cadence": 19, "temperature": 17, "timestamp": "2022-10-26T12:05:47Z"},
     {"lat": 52.641972, "lon": 5.051502, "elevation": -15.6, "speed": 35.6, "heartRate": 177, "power": 0, "cadence": 0, "temperature": 17, "timestamp": "2022-10-26T12:05:48Z"},
     {"lat": 52.641949, "lon": 5.051629, "elevation": -15.6, "speed": 32.1, "heartRate": 177, "power": 0, "cadence": 0, "temperature": 17, "timestamp": "2022-10-26T12:05:49Z"},
-    {"lat": 52.641930, "lon": 5.051743, "elevation": -15.6, "speed": 28.7, "heartRate": 176, "power": 0, "cadence": 0, "temperature": 17, "timestamp": "2022-10-26T12:05:50Z"}
+    {"lat": 52.641930, "lon": 5.051743, "elevation": -15.6, "speed": 28.7, "heartRate": 176, "power": 0, "cadence": 0, "temperature": 17, "timestamp": "2022-10-26T12:05:50Z"},
+    {"lat": 0.000000, "lon": 0.000000, "elevation": 0.0, "timestamp": "2022-10-26T12:05:51Z"}
   ],
   "summary": {
-    "points": 4516,
+    "points": 4518,
     "distanceKm": 38.44,
-    "durationMin": 81.03,
+    "durationMin": 81.07,
     "avgHeartRate": 146.4,
     "maxHeartRate": 177.0,
     "avgPower": 186.4,
@@ -4536,7 +4538,11 @@
     "sessionAvgSpeedKmh": 30.7,
     "sessionElapsedSec": 4864,
     "sessionMovingSec": 4517,
-    "startTime": "2022-10-26T10:44:48Z",
-    "endTime": "2022-10-26T12:05:50Z"
+    "manufacturer": 32,
+    "sport": 2,
+    "subSport": 0,
+    "isIndoor": false,
+    "startTime": "2022-10-26T10:44:47Z",
+    "endTime": "2022-10-26T12:05:51Z"
   }
 }

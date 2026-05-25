@@ -13361,6 +13361,10 @@
     "sessionAvgSpeedKmh": 27.3,
     "sessionElapsedSec": 14161,
     "sessionMovingSec": 13341,
+    "manufacturer": 32,
+    "sport": 2,
+    "subSport": 0,
+    "isIndoor": false,
     "startTime": "2022-09-03T10:58:56Z",
     "endTime": "2022-09-03T14:54:56Z"
   }
