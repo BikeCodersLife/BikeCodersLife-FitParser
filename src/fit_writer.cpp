@@ -66,6 +66,12 @@ void FitWriter::write(const ParsedActivity& activity, const std::string& outputP
     size_t pwrCount = 0;
     size_t speedCount = 0;
 
+    // Carry the previous track point across iterations so we can derive
+    // per-record speed from the cumulative-distance + timestamp delta
+    // when the source didn't supply explicit <speed> records.
+    TrackPoint prevPoint;
+    bool hasPrevPoint = false;
+
     for (const auto& point : activity.points) {
         fit::RecordMesg record;
 
@@ -123,15 +129,35 @@ void FitWriter::write(const ParsedActivity& activity, const std::string& outputP
             record.SetTemperature(point.temperature);
         }
 
-        // Speed
-        if (point.hasSpeed && point.speed > 0.0f) {
-            record.SetSpeed(point.speed);
-            totalSpeed += point.speed;
+        // Speed — prefer explicit per-point speed; otherwise derive from
+        // the GPS-derived cumulative distance + timestamp delta so the
+        // session/lap max-speed is a real peak instead of equal to the
+        // average. Earlier this branch wrote no per-record speed at all
+        // when the source GPX lacked <speed>, and the session-block
+        // fallback at the bottom collapsed maxSpeed to distance/elapsed
+        // = avgSpeed (the "MAX = AVG" symptom on every Strava-synth ride).
+        float pointSpeedMs = point.speed;
+        bool pointHasSpeed = point.hasSpeed && point.speed > 0.0f;
+        if (!pointHasSpeed && hasPrevPoint
+            && point.timestamp > prevPoint.timestamp
+            && point.distance > prevPoint.distance) {
+            uint32_t dt = point.timestamp - prevPoint.timestamp;
+            double segMeters = point.distance - prevPoint.distance;
+            if (dt > 0 && segMeters > 0.0) {
+                pointSpeedMs = static_cast<float>(segMeters / static_cast<double>(dt));
+                pointHasSpeed = true;
+            }
+        }
+        if (pointHasSpeed) {
+            record.SetSpeed(pointSpeedMs);
+            totalSpeed += pointSpeedMs;
             speedCount++;
-            if (point.speed > maxSpeed) maxSpeed = point.speed;
+            if (pointSpeedMs > maxSpeed) maxSpeed = pointSpeedMs;
         }
 
         encode.Write(record);
+        prevPoint = point;
+        hasPrevPoint = true;
     }
 
     // --- Timer Stop Event ---
