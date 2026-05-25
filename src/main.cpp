@@ -62,9 +62,10 @@ void printUsage(const char* programName) {
  * Print version information
  */
 void printVersion() {
-    std::cout << "BikeCodersLife FIT Parser v2.1.1" << std::endl;
+    std::cout << "BikeCodersLife FIT Parser v2.1.2" << std::endl;
     std::cout << "Built with Garmin FIT SDK + pugixml" << std::endl;
     std::cout << "Supports: FIT, GPX, TCX input | FIT, JSON output" << std::endl;
+    std::cout << "v2.1.2: gps-strip actually redacts position + preserves HR/power/cadence/temp/speed; derive per-record speed from GPS deltas so session max-speed isn't collapsed to avg; keep records without GPS (indoor pauses, trim zones)" << std::endl;
     std::cout << "v2.1.1: emit FileId.manufacturer + Session.sub_sport + derived isIndoor flag (indoor trainer / virtual-activity detection)" << std::endl;
     std::cout << "v2.1.0 (#156): emit FIT session totals (sessionDistanceKm, sessionElevationGainM/LossM, sessionMaxSpeedKmh, sessionAvgSpeedKmh, sessionElapsedSec, sessionMovingSec)" << std::endl;
 }
