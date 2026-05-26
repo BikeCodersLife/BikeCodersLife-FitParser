@@ -221,8 +221,13 @@ RideStatistic FitParser::extractCoordinates() {
     stats.avgPower = 0;
     stats.maxPower = 0;
     stats.avgCadence = 0;
+    stats.maxCadence = 0;
     stats.avgSpeed = 0;
     stats.maxSpeed = 0;
+    stats.smoothedMaxSpeed = 0;
+    stats.coastingTimeSec = 0;
+    stats.coastingDistanceKm = 0;
+    stats.coastingPct = 0;
     stats.movingTimeSec = 0;
     stats.hasHeartRateData = false;
     stats.hasPowerData = false;
@@ -322,6 +327,10 @@ RideStatistic FitParser::extractCoordinates() {
     long countPower = 0;
     double totalCadence = 0;
     long countCadence = 0;
+    // Time-weighted power integration for a coasting-inclusive average power
+    // that matches Strava / Garmin. See the integration in the loop below.
+    double powerWork = 0.0;        // Σ power·dt (coasting samples contribute 0)
+    double powerTimeWeight = 0.0;  // Σ dt over the same (capped) intervals
 
     // Calculate duration in minutes (difference between start and end timestamps)
     // FIT timestamps are seconds since epoch
@@ -334,6 +343,8 @@ RideStatistic FitParser::extractCoordinates() {
     long countMovingSpeed = 0;
     double movingTimeSec = 0.0;
     const double movingThreshold = 1.0; // km/h — below this = stopped
+    double coastingTimeSec = 0.0;       // moving but not pedalling (freewheel)
+    double coastingDistanceMeters = 0.0;// distance covered while coasting
 
     // Iterate through coordinates to calculate distance, speed, and health stats
     for (size_t i = 0; i < stats.coordinates.size(); ++i) {
@@ -361,6 +372,17 @@ RideStatistic FitParser::extractCoordinates() {
                     totalMovingSpeed += point.speed;
                     countMovingSpeed++;
                     movingTimeSec += dt;
+
+                    // Coasting: moving but not pedalling (freewheel). Devices
+                    // omit cadence/power while coasting rather than logging a
+                    // zero, so "not pedalling" = no positive cadence AND no
+                    // positive power. Track both time and distance covered.
+                    const bool notPedalling = !((prev.hasCadence && prev.cadence > 0)
+                        || (prev.hasPower && prev.power > 0));
+                    if (notPedalling) {
+                        coastingTimeSec += dt;
+                        coastingDistanceMeters += segmentMeters;
+                    }
                 }
                 if (point.speed > stats.maxSpeed) {
                     stats.maxSpeed = point.speed;
@@ -388,11 +410,31 @@ RideStatistic FitParser::extractCoordinates() {
             }
         }
 
+        // Time-weighted power integration over the active stream. Each interval
+        // bills the PREVIOUS sample's power (0 when coasting / no power) across
+        // its dt, so freewheeling-while-moving correctly drags the average
+        // power down to the elapsed-time value Strava / Garmin report — rather
+        // than the higher pedalling-only mean. dt is capped at 20 s so a real
+        // pause / recording dropout isn't billed as coasting-zero, and it's
+        // time-weighted so sparse (e.g. 1-per-3-second) logs are handled too.
+        if (i > 0) {
+            const auto& pp = stats.coordinates[i - 1];
+            const uint32_t pdt = point.timestamp - pp.timestamp;
+            if (pdt > 0) {
+                const double capped = pdt > 20 ? 20.0 : static_cast<double>(pdt);
+                powerWork += (pp.hasPower ? static_cast<double>(pp.power) : 0.0) * capped;
+                powerTimeWeight += capped;
+            }
+        }
+
         // Cadence
         if (point.hasCadence) {
             stats.hasCadenceData = true;
             totalCadence += point.cadence;
             countCadence++;
+            if (point.cadence > stats.maxCadence) {
+                stats.maxCadence = point.cadence;
+            }
         }
     }
 
@@ -409,10 +451,66 @@ RideStatistic FitParser::extractCoordinates() {
     stats.durationMin = std::round(stats.durationMin * 100.0) / 100.0;
     stats.maxSpeed = std::round(stats.maxSpeed * 10.0) / 10.0;
     stats.movingTimeSec = movingTimeSec;
+    stats.coastingTimeSec = std::round(coastingTimeSec);
+    stats.coastingDistanceKm = std::round((coastingDistanceMeters / 1000.0) * 100.0) / 100.0;
+    stats.coastingPct = movingTimeSec > 0
+        ? std::round((coastingTimeSec / movingTimeSec) * 1000.0) / 10.0
+        : 0.0;
+
+    // Spike-resistant max speed: the peak of a ~5-second rolling mean over the
+    // per-point GPS-derived speed series. The window is TIME-based (not a fixed
+    // sample count) so it behaves consistently across recording rates — 1 Hz,
+    // smart-recording, or sparse 1-record-per-3-seconds logs (a fixed 5-sample
+    // window would span 15 s on the latter and over-smooth real peaks). A
+    // single or short GPS-distance glitch is diluted by the window while a
+    // sustained real descent peak survives — correct where both the raw
+    // single-sample max (catches spikes) and a coarse 5-second-DECIMATED mean
+    // (misses sustained peaks) fail. Consumers should prefer this over maxSpeed.
+    {
+        const uint32_t windowSec = 5;
+        const auto& cs = stats.coordinates;
+        const bool haveTimes = !cs.empty() && cs.back().timestamp > cs.front().timestamp;
+        double best = 0.0;
+        if (haveTimes) {
+            // Two-pointer sliding window keeping the time span within windowSec.
+            size_t start = 0;
+            double sum = 0.0;
+            for (size_t end = 0; end < cs.size(); ++end) {
+                sum += cs[end].speed;
+                while (start < end && cs[end].timestamp - cs[start].timestamp > windowSec) {
+                    sum -= cs[start].speed;
+                    ++start;
+                }
+                const double avg = sum / static_cast<double>(end - start + 1);
+                if (avg > best) best = avg;
+            }
+            stats.smoothedMaxSpeed = std::round(best * 10.0) / 10.0;
+        } else if (cs.size() >= 5) {
+            // No usable timestamps — fall back to a fixed 5-sample window.
+            double sum = 0.0;
+            for (size_t i = 0; i < 5; ++i) sum += cs[i].speed;
+            best = sum / 5.0;
+            for (size_t i = 5; i < cs.size(); ++i) {
+                sum += cs[i].speed - cs[i - 5].speed;
+                if (sum / 5.0 > best) best = sum / 5.0;
+            }
+            stats.smoothedMaxSpeed = std::round(best * 10.0) / 10.0;
+        } else {
+            stats.smoothedMaxSpeed = stats.maxSpeed;
+        }
+    }
 
     // Calculate Averages
     if (countHeartRate > 0) stats.avgHeartRate = totalHeartRate / countHeartRate;
-    if (countPower > 0) stats.avgPower = totalPower / countPower;
+    // Average power: prefer the coasting-inclusive time-weighted value (matches
+    // Strava / Garmin, which average over elapsed/moving time with coasting as
+    // zero). Fall back to the pedalling-only mean only when timestamps are
+    // unusable for integration.
+    if (stats.hasPowerData && powerTimeWeight > 0) {
+        stats.avgPower = powerWork / powerTimeWeight;
+    } else if (countPower > 0) {
+        stats.avgPower = totalPower / countPower;
+    }
     if (countCadence > 0) stats.avgCadence = totalCadence / countCadence;
     if (countMovingSpeed > 0) stats.avgSpeed = std::round((totalMovingSpeed / countMovingSpeed) * 10.0) / 10.0;
 

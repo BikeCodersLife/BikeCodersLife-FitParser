@@ -55,9 +55,14 @@ struct RideStatistic {
     double avgPower;
     double maxPower;
     double avgCadence;
+    double maxCadence;
     double avgSpeed;        // km/h, moving speed (excludes stops)
-    double maxSpeed;        // km/h
+    double maxSpeed;        // km/h, raw single-sample peak (spike-prone)
+    double smoothedMaxSpeed;// km/h, spike-resistant peak (5-sample rolling mean)
     double movingTimeSec;   // seconds where speed > threshold
+    double coastingTimeSec; // seconds moving but not pedalling (freewheel)
+    double coastingDistanceKm;// distance covered while coasting
+    double coastingPct;     // coastingTimeSec as % of moving time
 
     // Data availability flags
     bool hasHeartRateData;

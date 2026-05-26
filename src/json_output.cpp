@@ -82,12 +82,21 @@ void JsonOutput::writeCoordinates(const RideStatistic& stats) {
     }
     if (stats.hasCadenceData) {
         std::cout << "    \"avgCadence\": " << std::fixed << std::setprecision(1) << stats.avgCadence << "," << std::endl;
+        std::cout << "    \"maxCadence\": " << std::fixed << std::setprecision(1) << stats.maxCadence << "," << std::endl;
     }
 
     // Speed stats (always output — computed from GPS)
     std::cout << "    \"avgSpeed\": " << std::fixed << std::setprecision(1) << stats.avgSpeed << "," << std::endl;
     std::cout << "    \"maxSpeed\": " << std::fixed << std::setprecision(1) << stats.maxSpeed << "," << std::endl;
+    std::cout << "    \"smoothedMaxSpeedKmh\": " << std::fixed << std::setprecision(1) << stats.smoothedMaxSpeed << "," << std::endl;
     std::cout << "    \"movingTimeSec\": " << std::fixed << std::setprecision(0) << stats.movingTimeSec << "," << std::endl;
+    // Coasting (moving but not pedalling) — only meaningful when there is a
+    // cadence or power signal to detect pedalling.
+    if (stats.hasCadenceData || stats.hasPowerData) {
+        std::cout << "    \"coastingTimeSec\": " << std::fixed << std::setprecision(0) << stats.coastingTimeSec << "," << std::endl;
+        std::cout << "    \"coastingDistanceKm\": " << std::fixed << std::setprecision(2) << stats.coastingDistanceKm << "," << std::endl;
+        std::cout << "    \"coastingPct\": " << std::fixed << std::setprecision(1) << stats.coastingPct << "," << std::endl;
+    }
 
     // Roadmap #156: emit FIT session totals when present + valid. PHP
     // prefers these (cycle-computer odometer, barometric ascent, sustained
