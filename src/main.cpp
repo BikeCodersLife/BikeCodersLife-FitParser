@@ -62,9 +62,10 @@ void printUsage(const char* programName) {
  * Print version information
  */
 void printVersion() {
-    std::cout << "BikeCodersLife FIT Parser v2.1.4" << std::endl;
+    std::cout << "BikeCodersLife FIT Parser v2.1.5" << std::endl;
     std::cout << "Built with Garmin FIT SDK + pugixml" << std::endl;
     std::cout << "Supports: FIT, GPX, TCX input | FIT, JSON output" << std::endl;
+    std::cout << "v2.1.5: emit normalizedPower (Coggan 30s rolling, coasting = 0 W) — consistent with coasting-inclusive avgPower instead of the held-power-across-gaps inflation" << std::endl;
     std::cout << "v2.1.4: emit maxCadence; spike-resistant time-windowed smoothedMaxSpeedKmh; coasting-inclusive time-weighted avgPower (matches Strava/Garmin); emit coastingTimeSec/coastingDistanceKm/coastingPct" << std::endl;
     std::cout << "v2.1.3: reject single-sample GPS-distance glitches in derived per-record speed (acceleration cap) so session max-speed isn't spiked above the real peak on Strava-synth rides" << std::endl;
     std::cout << "v2.1.2: gps-strip actually redacts position + preserves HR/power/cadence/temp/speed; derive per-record speed from GPS deltas so session max-speed isn't collapsed to avg; keep records without GPS (indoor pauses, trim zones)" << std::endl;

@@ -54,6 +54,7 @@ struct RideStatistic {
     double maxHeartRate;
     double avgPower;
     double maxPower;
+    double normalizedPower;// Coggan NP: 30s rolling-mean power^4 mean, 4th root (coasting = 0 W)
     double avgCadence;
     double maxCadence;
     double avgSpeed;        // km/h, moving speed (excludes stops)

@@ -220,6 +220,7 @@ RideStatistic FitParser::extractCoordinates() {
     stats.maxHeartRate = 0;
     stats.avgPower = 0;
     stats.maxPower = 0;
+    stats.normalizedPower = 0;
     stats.avgCadence = 0;
     stats.maxCadence = 0;
     stats.avgSpeed = 0;
@@ -497,6 +498,53 @@ RideStatistic FitParser::extractCoordinates() {
             stats.smoothedMaxSpeed = std::round(best * 10.0) / 10.0;
         } else {
             stats.smoothedMaxSpeed = stats.maxSpeed;
+        }
+    }
+
+    // Normalized Power (Coggan): 30-second time-weighted rolling-mean power,
+    // mean of the 4th powers, 4th root. Coasting counts as ZERO watts (the
+    // reader stores power = 0 when the device omits it while freewheeling),
+    // matching the coasting-inclusive average power and the standard NP
+    // definition — rather than holding the prior power across the gap. Only
+    // computed when the ride actually carries power data.
+    if (stats.hasPowerData) {
+        const auto& cs = stats.coordinates;
+        const size_t n = cs.size();
+        if (n >= 2) {
+            std::vector<double> dur(n);
+            for (size_t i = 0; i + 1 < n; ++i) {
+                const double d = static_cast<double>(cs[i + 1].timestamp) - static_cast<double>(cs[i].timestamp);
+                dur[i] = d > 0.001 ? d : 0.001;
+            }
+            dur[n - 1] = dur[n - 2];
+            double totalDuration = 0.0;
+            for (const double d : dur) totalDuration += d;
+            if (totalDuration >= 30.0) {
+                std::vector<double> avgs;
+                size_t left = 0;
+                double weightedSum = 0.0;
+                double totalWeight = 0.0;
+                for (size_t right = 0; right < n; ++right) {
+                    const double p = cs[right].hasPower ? static_cast<double>(cs[right].power) : 0.0;
+                    weightedSum += p * dur[right];
+                    totalWeight += dur[right];
+                    while (left < right
+                        && (static_cast<double>(cs[right].timestamp) + dur[right] - static_cast<double>(cs[left].timestamp)) > 30.0) {
+                        const double pl = cs[left].hasPower ? static_cast<double>(cs[left].power) : 0.0;
+                        weightedSum -= pl * dur[left];
+                        totalWeight -= dur[left];
+                        ++left;
+                    }
+                    if (totalWeight + 1e-9 >= 30.0) {
+                        avgs.push_back(weightedSum / totalWeight);
+                    }
+                }
+                if (!avgs.empty()) {
+                    double sumFourth = 0.0;
+                    for (const double a : avgs) sumFourth += a * a * a * a;
+                    stats.normalizedPower = std::round(std::pow(sumFourth / static_cast<double>(avgs.size()), 0.25) * 10.0) / 10.0;
+                }
+            }
         }
     }
 

@@ -79,6 +79,7 @@ void JsonOutput::writeCoordinates(const RideStatistic& stats) {
     if (stats.hasPowerData) {
         std::cout << "    \"avgPower\": " << std::fixed << std::setprecision(1) << stats.avgPower << "," << std::endl;
         std::cout << "    \"maxPower\": " << std::fixed << std::setprecision(1) << stats.maxPower << "," << std::endl;
+        std::cout << "    \"normalizedPower\": " << std::fixed << std::setprecision(1) << stats.normalizedPower << "," << std::endl;
     }
     if (stats.hasCadenceData) {
         std::cout << "    \"avgCadence\": " << std::fixed << std::setprecision(1) << stats.avgCadence << "," << std::endl;

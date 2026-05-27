@@ -3686,6 +3686,7 @@
     "maxHeartRate": 182.0,
     "avgPower": 144.7,
     "maxPower": 946.0,
+    "normalizedPower": 201.0,
     "avgCadence": 89.1,
     "maxCadence": 114.0,
     "avgSpeed": 23.0,
