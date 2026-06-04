@@ -1,7 +1,6 @@
 {
   "coordinates": [
-    {"lat": 0.000000, "lon": 0.000000, "elevation": 0.0, "timestamp": "2022-10-26T10:44:47Z"},
-    {"lat": 52.578564, "lon": 4.696612, "elevation": -9.4, "timestamp": "2022-10-26T10:44:48Z"},
+    {"lat": 52.578564, "lon": 4.696612, "elevation": -9.4, "speed": 26.9, "timestamp": "2022-10-26T10:44:48Z"},
     {"lat": 52.578629, "lon": 4.696641, "elevation": -9.6, "speed": 26.9, "power": 194, "cadence": 94, "timestamp": "2022-10-26T10:44:49Z"},
     {"lat": 52.578709, "lon": 4.696674, "elevation": -9.6, "speed": 33.1, "heartRate": 111, "power": 192, "cadence": 96, "timestamp": "2022-10-26T10:44:50Z"},
     {"lat": 52.578773, "lon": 4.696702, "elevation": -9.4, "speed": 26.8, "heartRate": 113, "power": 181, "cadence": 95, "timestamp": "2022-10-26T10:44:51Z"},
@@ -4516,23 +4515,22 @@
     {"lat": 52.641998, "lon": 5.051362, "elevation": -15.8, "speed": 36.9, "heartRate": 177, "power": 34, "cadence": 19, "temperature": 17, "timestamp": "2022-10-26T12:05:47Z"},
     {"lat": 52.641972, "lon": 5.051502, "elevation": -15.6, "speed": 35.6, "heartRate": 177, "power": 0, "cadence": 0, "temperature": 17, "timestamp": "2022-10-26T12:05:48Z"},
     {"lat": 52.641949, "lon": 5.051629, "elevation": -15.6, "speed": 32.1, "heartRate": 177, "power": 0, "cadence": 0, "temperature": 17, "timestamp": "2022-10-26T12:05:49Z"},
-    {"lat": 52.641930, "lon": 5.051743, "elevation": -15.6, "speed": 28.7, "heartRate": 176, "power": 0, "cadence": 0, "temperature": 17, "timestamp": "2022-10-26T12:05:50Z"},
-    {"lat": 0.000000, "lon": 0.000000, "elevation": 0.0, "timestamp": "2022-10-26T12:05:51Z"}
+    {"lat": 52.641930, "lon": 5.051743, "elevation": -15.6, "speed": 28.7, "heartRate": 176, "power": 0, "cadence": 0, "temperature": 17, "timestamp": "2022-10-26T12:05:50Z"}
   ],
   "summary": {
-    "points": 4518,
+    "points": 4516,
     "distanceKm": 38.44,
-    "durationMin": 81.07,
+    "durationMin": 81.03,
     "avgHeartRate": 146.4,
     "maxHeartRate": 177.0,
-    "avgPower": 183.5,
+    "avgPower": 183.6,
     "maxPower": 663.0,
     "normalizedPower": 200.4,
     "avgCadence": 85.0,
     "maxCadence": 106.0,
     "avgSpeed": 30.7,
     "maxSpeed": 57.5,
-    "smoothedMaxSpeedKmh": 45.5,
+    "smoothedMaxSpeedKmh": 45.1,
     "movingTimeSec": 4509,
     "coastingTimeSec": 187,
     "coastingDistanceKm": 0.93,
@@ -4548,7 +4546,7 @@
     "sport": 2,
     "subSport": 0,
     "isIndoor": false,
-    "startTime": "2022-10-26T10:44:47Z",
-    "endTime": "2022-10-26T12:05:51Z"
+    "startTime": "2022-10-26T10:44:48Z",
+    "endTime": "2022-10-26T12:05:50Z"
   }
 }

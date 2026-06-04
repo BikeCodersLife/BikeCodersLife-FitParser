@@ -144,7 +144,13 @@ fit_json = json.load(open('$TMP_DIR/fit_out.json'))
 gpx_count = len(gpx_json['coordinates'])
 fit_count = len(fit_json['coordinates'])
 
-assert gpx_count == fit_count, f'point count mismatch: GPX={gpx_count} FIT={fit_count}'
+# The converted-FIT parse runs full stats including the GPS de-spike (v2.1.6),
+# which removes isolated glitch fixes; the lighter GPX-direct path does not.
+# So the FIT may have a FEW fewer points — never more, and never a wholesale
+# loss. Allow the small de-spike delta rather than demanding exact equality.
+dropped = gpx_count - fit_count
+assert 0 <= dropped <= max(10, int(gpx_count * 0.01)), \
+    f'point count mismatch beyond de-spike tolerance: GPX={gpx_count} FIT={fit_count} (dropped {dropped})'
 
 gpx_first = gpx_json['coordinates'][0]
 fit_first = fit_json['coordinates'][0]
@@ -190,6 +196,51 @@ if version=$("$PARSER" --version 2>&1) && echo "$version" | grep -qE "v2\.[0-9]+
     pass "--version shows v2.x"
 else
     fail "--version (got: $version)"
+fi
+
+echo ""
+echo "--- GPS de-spike + spike-resistant max speed (v2.1.6) ---"
+
+# A FIT that opens with a pre-GPS-lock (0,0) fix must be de-spiked: no
+# null-island coordinate survives, so the route doesn't stretch to (0,0).
+TOTAL=$((TOTAL + 1))
+# Real-ride .fit fixtures are not committed (kept dev-local); skip when absent.
+nullfit="$FIXTURES_DIR/2022-08-01-165517-ELEMNT BFF6-119-0.fit"
+if [ ! -f "$nullfit" ]; then
+    skip "null-island de-spike (FIT fixture not present)"
+elif "$PARSER" "$nullfit" 2>/dev/null > "$TMP_DIR/nullisland.json" && python3 -c "
+import json
+d = json.load(open('$TMP_DIR/nullisland.json'))
+bad = [p for p in d['coordinates'] if abs(p['lat']) < 0.1 and abs(p['lon']) < 0.1]
+assert not bad, f'null-island fix survived de-spike: {bad[:1]}'
+sm = d['summary']['smoothedMaxSpeedKmh']
+assert 0 < sm < 120, f'implausible smoothedMaxSpeedKmh {sm}'
+" 2>/dev/null; then
+    pass "null-island (0,0) fix de-spiked + sane smoothedMaxSpeedKmh"
+else
+    fail "null-island de-spike"
+fi
+
+# A GPX with isolated GPS jumps (700 m in 1 s = 2500 km/h): the rolling-MEDIAN
+# smoothedMaxSpeedKmh must reject them. A rolling mean reported ~517 km/h here;
+# the real descent peak is ~70 (Strava 76.7). Also exercises valid-JSON output
+# (no bare -nan from coasting math on a power-less GPX).
+TOTAL=$((TOTAL + 1))
+furka="$FIXTURES_DIR/Heen_en_weer_Furkapass.gpx"
+furkafit="$TMP_DIR/furka.fit"
+if [ -f "$furka" ] && "$PARSER" "$furka" --convert "$furkafit" 2>/dev/null && "$PARSER" "$furkafit" 2>/dev/null > "$TMP_DIR/furka.json"; then
+    if python3 -c "
+import json
+d = json.load(open('$TMP_DIR/furka.json'))
+sm = d['summary']['smoothedMaxSpeedKmh']
+assert 40 < sm < 120, f'smoothedMaxSpeedKmh {sm} is not spike-resistant (expected ~70)'
+" 2>/dev/null; then
+        pass "rolling-median rejects GPS speed spike (smoothedMax ~70, not 517)"
+    else
+        fail "spike-resistant max speed"
+    fi
+else
+    fail "furka fixture missing / convert / parse error"
 fi
 
 echo ""

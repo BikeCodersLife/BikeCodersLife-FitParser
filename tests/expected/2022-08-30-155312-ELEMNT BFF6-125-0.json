@@ -1,7 +1,6 @@
 {
   "coordinates": [
-    {"lat": 0.000000, "lon": 0.000000, "elevation": 0.0, "timestamp": "2022-08-30T15:53:12Z"},
-    {"lat": 52.643322, "lon": 5.079538, "elevation": 4.0, "heartRate": 113, "power": 183, "cadence": 79, "timestamp": "2022-08-30T15:53:13Z"},
+    {"lat": 52.643322, "lon": 5.079538, "elevation": 4.0, "speed": 20.2, "heartRate": 113, "power": 183, "cadence": 79, "timestamp": "2022-08-30T15:53:13Z"},
     {"lat": 52.643273, "lon": 5.079515, "elevation": 4.0, "speed": 20.2, "heartRate": 115, "power": 177, "cadence": 81, "temperature": 20, "timestamp": "2022-08-30T15:53:14Z"},
     {"lat": 52.643219, "lon": 5.079520, "elevation": 3.8, "speed": 21.7, "heartRate": 117, "power": 187, "cadence": 83, "temperature": 20, "timestamp": "2022-08-30T15:53:15Z"},
     {"lat": 52.643170, "lon": 5.079545, "elevation": 3.8, "speed": 20.5, "heartRate": 118, "power": 184, "cadence": 84, "temperature": 20, "timestamp": "2022-08-30T15:53:16Z"},
@@ -4604,19 +4603,19 @@
     {"lat": 0.000000, "lon": 0.000000, "elevation": 0.0, "timestamp": "2022-08-30T17:09:53Z"}
   ],
   "summary": {
-    "points": 4602,
+    "points": 4601,
     "distanceKm": 33.82,
-    "durationMin": 76.68,
+    "durationMin": 76.67,
     "avgHeartRate": 146.5,
     "maxHeartRate": 184.0,
-    "avgPower": 185.4,
+    "avgPower": 185.5,
     "maxPower": 534.0,
     "normalizedPower": 219.1,
     "avgCadence": 92.6,
     "maxCadence": 111.0,
     "avgSpeed": 26.5,
     "maxSpeed": 49.8,
-    "smoothedMaxSpeedKmh": 45.1,
+    "smoothedMaxSpeedKmh": 44.5,
     "movingTimeSec": 4598,
     "coastingTimeSec": 53,
     "coastingDistanceKm": 0.29,
@@ -4632,7 +4631,7 @@
     "sport": 2,
     "subSport": 0,
     "isIndoor": false,
-    "startTime": "2022-08-30T15:53:12Z",
+    "startTime": "2022-08-30T15:53:13Z",
     "endTime": "2022-08-30T17:09:53Z"
   }
 }

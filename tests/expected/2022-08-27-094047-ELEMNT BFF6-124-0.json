@@ -13174,7 +13174,7 @@
     "maxCadence": 106.0,
     "avgSpeed": 27.6,
     "maxSpeed": 46.7,
-    "smoothedMaxSpeedKmh": 43.8,
+    "smoothedMaxSpeedKmh": 42.6,
     "movingTimeSec": 13121,
     "coastingTimeSec": 151,
     "coastingDistanceKm": 0.63,

@@ -2,6 +2,14 @@
 #include <iomanip>
 #include <sstream>
 #include <ctime>
+#include <cmath>
+
+namespace {
+// JSON has no NaN/Infinity literals; emitting bare -nan (e.g. coasting math on
+// a GPX with no power signal) produces invalid JSON that strict parsers reject.
+// Coerce any non-finite value to 0.0 so the output always parses.
+inline double finite0(double v) { return std::isfinite(v) ? v : 0.0; }
+}
 
 std::string JsonOutput::timestampToIso8601(uint32_t timestamp) {
     // FIT epoch: 1989-12-31 00:00:00 UTC
@@ -94,9 +102,9 @@ void JsonOutput::writeCoordinates(const RideStatistic& stats) {
     // Coasting (moving but not pedalling) — only meaningful when there is a
     // cadence or power signal to detect pedalling.
     if (stats.hasCadenceData || stats.hasPowerData) {
-        std::cout << "    \"coastingTimeSec\": " << std::fixed << std::setprecision(0) << stats.coastingTimeSec << "," << std::endl;
-        std::cout << "    \"coastingDistanceKm\": " << std::fixed << std::setprecision(2) << stats.coastingDistanceKm << "," << std::endl;
-        std::cout << "    \"coastingPct\": " << std::fixed << std::setprecision(1) << stats.coastingPct << "," << std::endl;
+        std::cout << "    \"coastingTimeSec\": " << std::fixed << std::setprecision(0) << finite0(stats.coastingTimeSec) << "," << std::endl;
+        std::cout << "    \"coastingDistanceKm\": " << std::fixed << std::setprecision(2) << finite0(stats.coastingDistanceKm) << "," << std::endl;
+        std::cout << "    \"coastingPct\": " << std::fixed << std::setprecision(1) << finite0(stats.coastingPct) << "," << std::endl;
     }
 
     // Roadmap #156: emit FIT session totals when present + valid. PHP

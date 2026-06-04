@@ -316,6 +316,47 @@ RideStatistic FitParser::extractCoordinates() {
         return stats;
     }
 
+    // GPS de-spike: drop fixes that don't fit the line between their
+    // neighbours — a pre-GPS-lock (0,0) leading fix, or an isolated point only
+    // reachable at an impossible speed from BOTH sides. A point that merely
+    // follows a signal gap (far from the previous fix but continuing normally
+    // to the next) is a real location and kept. Runs BEFORE the
+    // distance/speed/geometry pass so every derived stat (and the coordinate
+    // stream every consumer reads) uses the cleaned track. Without this, one
+    // (0,0) fix makes the route line span from null-island to the real ride.
+    if (stats.coordinates.size() >= 3) {
+        const double glitchKmh = 120.0; // impossible between adjacent fixes for cycling
+        auto segKmh = [this](const Coordinate& a, const Coordinate& b) -> double {
+            if (b.timestamp <= a.timestamp) return 0.0; // no elapsed time → can't judge
+            const double meters = calculateDistance(a.lat, a.lon, b.lat, b.lon);
+            return (meters / 1000.0) / ((b.timestamp - a.timestamp) / 3600.0);
+        };
+        const std::vector<Coordinate> cs = stats.coordinates;
+        std::vector<Coordinate> kept;
+        kept.reserve(cs.size());
+        for (size_t i = 0; i < cs.size(); ++i) {
+            const bool hasPrev = i > 0;
+            const bool hasNext = i + 1 < cs.size();
+            const double sIn = hasPrev ? segKmh(cs[i - 1], cs[i]) : 0.0;
+            const double sOut = hasNext ? segKmh(cs[i], cs[i + 1]) : 0.0;
+            bool spike = false;
+            if (hasPrev && hasNext) {
+                spike = (sIn > glitchKmh && sOut > glitchKmh); // isolated interior
+            } else if (!hasPrev) {
+                spike = (sOut > glitchKmh);                    // leading (pre-lock 0,0)
+            } else {
+                spike = (sIn > glitchKmh);                     // trailing
+            }
+            if (!spike) {
+                kept.push_back(cs[i]);
+            }
+        }
+        stats.coordinates = kept;
+        if (stats.coordinates.empty()) {
+            return stats;
+        }
+    }
+
     // Calculate stats
     double totalDistanceMeters = 0.0;
     stats.startTime = stats.coordinates.front().timestamp;
@@ -458,44 +499,57 @@ RideStatistic FitParser::extractCoordinates() {
         ? std::round((coastingTimeSec / movingTimeSec) * 1000.0) / 10.0
         : 0.0;
 
-    // Spike-resistant max speed: the peak of a ~5-second rolling mean over the
-    // per-point GPS-derived speed series. The window is TIME-based (not a fixed
-    // sample count) so it behaves consistently across recording rates — 1 Hz,
-    // smart-recording, or sparse 1-record-per-3-seconds logs (a fixed 5-sample
-    // window would span 15 s on the latter and over-smooth real peaks). A
-    // single or short GPS-distance glitch is diluted by the window while a
-    // sustained real descent peak survives — correct where both the raw
-    // single-sample max (catches spikes) and a coarse 5-second-DECIMATED mean
-    // (misses sustained peaks) fail. Consumers should prefer this over maxSpeed.
+    // Spike-resistant max speed: the peak of a rolling MEDIAN over the
+    // per-point GPS-derived speed series. The window is TIME-based (~7 s, not a
+    // fixed sample count) so it behaves consistently across recording rates.
+    //
+    // A MEDIAN, not a mean: a single GPS-distance glitch (e.g. a 700 m jump in
+    // 1 s = 2500 km/h) only shifts the window's median by one rank, so it's
+    // ignored, whereas a mean averages it in — a 5 s window with one 2500 km/h
+    // sample and four 28 km/h samples means ~520 km/h, which is exactly the
+    // bogus "517 km/h max" this replaces. A sustained real descent peak (the
+    // majority of the window) still survives. Consumers should prefer this
+    // over maxSpeed.
     {
-        const uint32_t windowSec = 5;
+        const uint32_t windowSec = 7;
         const auto& cs = stats.coordinates;
         const bool haveTimes = !cs.empty() && cs.back().timestamp > cs.front().timestamp;
         double best = 0.0;
+        auto windowMedian = [](std::vector<double>& w) -> double {
+            if (w.empty()) return 0.0;
+            std::sort(w.begin(), w.end());
+            const size_t mid = w.size() / 2;
+            return (w.size() % 2 == 0) ? (w[mid - 1] + w[mid]) / 2.0 : w[mid];
+        };
         if (haveTimes) {
             // Two-pointer sliding window keeping the time span within windowSec.
             size_t start = 0;
-            double sum = 0.0;
             for (size_t end = 0; end < cs.size(); ++end) {
-                sum += cs[end].speed;
                 while (start < end && cs[end].timestamp - cs[start].timestamp > windowSec) {
-                    sum -= cs[start].speed;
                     ++start;
                 }
-                const double avg = sum / static_cast<double>(end - start + 1);
-                if (avg > best) best = avg;
+                std::vector<double> speeds;
+                speeds.reserve(end - start + 1);
+                for (size_t k = start; k <= end; ++k) speeds.push_back(cs[k].speed);
+                const double med = windowMedian(speeds);
+                if (med > best) best = med;
             }
             stats.smoothedMaxSpeed = std::round(best * 10.0) / 10.0;
         } else if (cs.size() >= 5) {
-            // No usable timestamps — fall back to a fixed 5-sample window.
-            double sum = 0.0;
-            for (size_t i = 0; i < 5; ++i) sum += cs[i].speed;
-            best = sum / 5.0;
-            for (size_t i = 5; i < cs.size(); ++i) {
-                sum += cs[i].speed - cs[i - 5].speed;
-                if (sum / 5.0 > best) best = sum / 5.0;
+            // No usable timestamps — fall back to a fixed 7-sample median window.
+            const size_t win = 7;
+            if (cs.size() >= win) {
+                for (size_t i = 0; i + win <= cs.size(); ++i) {
+                    std::vector<double> speeds;
+                    speeds.reserve(win);
+                    for (size_t k = i; k < i + win; ++k) speeds.push_back(cs[k].speed);
+                    const double med = windowMedian(speeds);
+                    if (med > best) best = med;
+                }
+                stats.smoothedMaxSpeed = std::round(best * 10.0) / 10.0;
+            } else {
+                stats.smoothedMaxSpeed = stats.maxSpeed;
             }
-            stats.smoothedMaxSpeed = std::round(best * 10.0) / 10.0;
         } else {
             stats.smoothedMaxSpeed = stats.maxSpeed;
         }
