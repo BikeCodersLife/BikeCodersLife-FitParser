@@ -74,6 +74,70 @@ void JsonOutput::writeCoordinates(const RideStatistic& stats) {
     }
     
     std::cout << "  ]," << std::endl;
+
+    // Per-sensor battery telemetry (battery design 2026-07-26): device_info
+    // messages grouped by device_index — identity fields last-seen-wins,
+    // samples verbatim. Omitted entirely when the file carries none (Strava
+    // exports, Zwift), so existing consumers see byte-identical output.
+    if (!stats.deviceInfos.empty()) {
+        // Collect distinct device indexes in first-seen order.
+        std::vector<uint8_t> indexes;
+        for (const auto& rec : stats.deviceInfos) {
+            if (!rec.hasDeviceIndex) continue;
+            bool seen = false;
+            for (uint8_t idx : indexes) if (idx == rec.deviceIndex) { seen = true; break; }
+            if (!seen) indexes.push_back(rec.deviceIndex);
+        }
+
+        std::cout << "  \"devices\": [" << std::endl;
+        for (size_t d = 0; d < indexes.size(); ++d) {
+            const uint8_t idx = indexes[d];
+
+            // Identity: last valid value wins (head units repeat identity per
+            // burst; later messages are at least as complete as earlier ones).
+            DeviceInfoRecord identity;
+            identity.deviceIndex = idx;
+            for (const auto& rec : stats.deviceInfos) {
+                if (!rec.hasDeviceIndex || rec.deviceIndex != idx) continue;
+                if (rec.hasManufacturer)     { identity.hasManufacturer = true;     identity.manufacturer = rec.manufacturer; }
+                if (rec.hasProduct)          { identity.hasProduct = true;          identity.product = rec.product; }
+                if (rec.hasSerialNumber)     { identity.hasSerialNumber = true;     identity.serialNumber = rec.serialNumber; }
+                if (rec.hasAntDeviceNumber)  { identity.hasAntDeviceNumber = true;  identity.antDeviceNumber = rec.antDeviceNumber; }
+                if (rec.hasAntplusDeviceType){ identity.hasAntplusDeviceType = true;identity.antplusDeviceType = rec.antplusDeviceType; }
+                if (rec.hasDeviceType)       { identity.hasDeviceType = true;       identity.deviceType = rec.deviceType; }
+                if (rec.hasSourceType)       { identity.hasSourceType = true;       identity.sourceType = rec.sourceType; }
+                if (rec.hasSoftwareVersion)  { identity.hasSoftwareVersion = true;  identity.softwareVersion = rec.softwareVersion; }
+            }
+
+            std::cout << "    {\"deviceIndex\": " << (int)idx;
+            if (identity.hasManufacturer)      std::cout << ", \"manufacturer\": " << identity.manufacturer;
+            if (identity.hasProduct)           std::cout << ", \"product\": " << identity.product;
+            if (identity.hasSerialNumber)      std::cout << ", \"serialNumber\": " << identity.serialNumber;
+            if (identity.hasAntDeviceNumber)   std::cout << ", \"antDeviceNumber\": " << identity.antDeviceNumber;
+            if (identity.hasAntplusDeviceType) std::cout << ", \"antplusDeviceType\": " << (int)identity.antplusDeviceType;
+            if (identity.hasDeviceType)        std::cout << ", \"deviceType\": " << (int)identity.deviceType;
+            if (identity.hasSourceType)        std::cout << ", \"sourceType\": " << (int)identity.sourceType;
+            if (identity.hasSoftwareVersion)   std::cout << ", \"softwareVersion\": " << std::fixed << std::setprecision(2) << identity.softwareVersion;
+
+            std::cout << ", \"samples\": [";
+            bool firstSample = true;
+            for (const auto& rec : stats.deviceInfos) {
+                if (!rec.hasDeviceIndex || rec.deviceIndex != idx || !rec.hasTimestamp) continue;
+                if (!firstSample) std::cout << ", ";
+                firstSample = false;
+                std::cout << "{\"t\": \"" << timestampToIso8601(rec.timestamp) << "\"";
+                if (rec.hasBatteryVoltage) std::cout << ", \"voltage\": " << std::fixed << std::setprecision(3) << rec.batteryVoltage;
+                if (rec.hasBatteryStatus)  std::cout << ", \"status\": " << (int)rec.batteryStatus;
+                if (rec.hasBatteryLevel)   std::cout << ", \"level\": " << (int)rec.batteryLevel;
+                std::cout << "}";
+            }
+            std::cout << "]}";
+            if (d < indexes.size() - 1) std::cout << ",";
+            std::cout << std::endl;
+        }
+        std::cout << "  ]," << std::endl;
+    }
+
     std::cout << "  \"summary\": {" << std::endl;
     std::cout << "    \"points\": " << coordinates.size() << "," << std::endl;
     std::cout << "    \"distanceKm\": " << std::fixed << std::setprecision(2) << stats.distanceKm << "," << std::endl;

@@ -12,6 +12,7 @@
 #include <fit_lap_mesg.hpp>
 #include <fit_session_mesg.hpp>
 #include <fit_activity_mesg.hpp>
+#include <fit_device_info_mesg.hpp>
 #include <fit_date_time.hpp>
 
 int32_t FitWriter::degreesToSemicircles(double degrees) {
@@ -50,6 +51,29 @@ void FitWriter::write(const ParsedActivity& activity, const std::string& outputP
     eventStart.SetEvent(FIT_EVENT_TIMER);
     eventStart.SetEventType(FIT_EVENT_TYPE_START);
     encode.Write(eventStart);
+
+    // --- device_info pass-through (battery design 2026-07-26) ---
+    // The GPS stripper's whole purpose is redacting POSITION; sensor identity
+    // + battery telemetry are the user's own device data and the input to the
+    // battery capacity model. Re-emit every captured message verbatim so a
+    // stripped/archived FIT keeps its battery history. (The file_id above
+    // stays anonymized — that identifies the head unit, not the sensors.)
+    for (const auto& rec : activity.deviceInfos) {
+        fit::DeviceInfoMesg deviceMesg;
+        if (rec.hasTimestamp)        deviceMesg.SetTimestamp(rec.timestamp);
+        if (rec.hasDeviceIndex)      deviceMesg.SetDeviceIndex(rec.deviceIndex);
+        if (rec.hasDeviceType)       deviceMesg.SetDeviceType(rec.deviceType);
+        if (rec.hasManufacturer)     deviceMesg.SetManufacturer(rec.manufacturer);
+        if (rec.hasProduct)          deviceMesg.SetProduct(rec.product);
+        if (rec.hasSerialNumber)     deviceMesg.SetSerialNumber(rec.serialNumber);
+        if (rec.hasAntDeviceNumber)  deviceMesg.SetAntDeviceNumber(rec.antDeviceNumber);
+        if (rec.hasSourceType)       deviceMesg.SetSourceType(static_cast<FIT_SOURCE_TYPE>(rec.sourceType));
+        if (rec.hasSoftwareVersion)  deviceMesg.SetSoftwareVersion(rec.softwareVersion);
+        if (rec.hasBatteryVoltage)   deviceMesg.SetBatteryVoltage(rec.batteryVoltage);
+        if (rec.hasBatteryStatus)    deviceMesg.SetBatteryStatus(rec.batteryStatus);
+        if (rec.hasBatteryLevel)     deviceMesg.SetBatteryLevel(rec.batteryLevel);
+        encode.Write(deviceMesg);
+    }
 
     // --- Record Messages (per track point) ---
     // Track statistics for session/lap summary
@@ -292,6 +316,9 @@ void FitWriter::write(const std::string& outputPath, const RideStatistic& stats)
     activity.durationSec = stats.durationMin * 60.0;
     activity.startTime = stats.startTime;
     activity.endTime = stats.endTime;
+    // Sensor battery telemetry survives the GPS strip (battery design
+    // 2026-07-26) — see the pass-through block in write(ParsedActivity&).
+    activity.deviceInfos = stats.deviceInfos;
 
     for (const auto& coord : stats.coordinates) {
         TrackPoint pt;

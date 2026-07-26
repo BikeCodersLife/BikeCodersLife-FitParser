@@ -5,6 +5,8 @@
 #include <vector>
 #include <string>
 
+#include "device_info_record.h"
+
 /**
  * Extended track point with full sensor data.
  * Used as the common interchange format between GPX/TCX parsers and FIT writer.
@@ -49,6 +51,11 @@ struct ParsedActivity {
     uint32_t startTime = 0;      // FIT epoch
     uint32_t endTime = 0;        // FIT epoch
     double durationSec = 0.0;    // Duration in seconds
+
+    // device_info pass-through (battery design 2026-07-26): the GPS stripper
+    // rebuilds the FIT from this struct — without carrying these, the archived
+    // ride would lose its sensor battery telemetry forever.
+    std::vector<DeviceInfoRecord> deviceInfos;
 };
 
 #endif // TRACK_POINT_H

@@ -5,6 +5,8 @@
 #include <vector>
 #include <cstdint>
 
+#include "device_info_record.h"
+
 /**
  * Coordinate structure representing a GPS point
  */
@@ -103,6 +105,10 @@ struct RideStatistic {
     bool hasSubSport = false;
     uint8_t subSport = 0;            // FIT_SUB_SPORT enum (6=INDOOR_CYCLING, 58=VIRTUAL_ACTIVITY)
     bool isIndoor = false;           // Computed flag — true when sub_sport or manufacturer marks the ride as indoor.
+
+    // Per-sensor device_info messages, verbatim decode order (battery design
+    // 2026-07-26). Empty for files without device_info (Strava exports, Zwift).
+    std::vector<DeviceInfoRecord> deviceInfos;
 };
 
 /**

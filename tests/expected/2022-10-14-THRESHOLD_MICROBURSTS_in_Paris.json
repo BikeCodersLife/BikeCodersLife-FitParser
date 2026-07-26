@@ -3689,6 +3689,9 @@
     {"lat": 48.861099, "lon": 2.329390, "elevation": 47.8, "speed": 3.4, "heartRate": 142, "power": 0, "cadence": 0, "timestamp": "2022-10-14T18:27:24Z"},
     {"lat": 48.861099, "lon": 2.329388, "elevation": 47.8, "speed": 0.4, "heartRate": 141, "power": 0, "cadence": 0, "timestamp": "2022-10-14T18:27:25Z"}
   ],
+  "devices": [
+    {"deviceIndex": 0, "manufacturer": 260, "product": 0, "serialNumber": 3825981698, "deviceType": 0, "softwareVersion": 5.62, "samples": [{"t": "2015-01-06T22:08:25Z", "voltage": 0.000, "status": 0}]}
+  ],
   "summary": {
     "points": 3688,
     "distanceKm": 31.89,

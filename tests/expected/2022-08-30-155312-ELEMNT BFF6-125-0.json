@@ -4602,6 +4602,13 @@
     {"lat": 0.000000, "lon": 0.000000, "elevation": 0.0, "heartRate": 118, "power": 0, "cadence": 0, "timestamp": "2022-08-30T17:09:52Z"},
     {"lat": 0.000000, "lon": 0.000000, "elevation": 0.0, "timestamp": "2022-08-30T17:09:53Z"}
   ],
+  "devices": [
+    {"deviceIndex": 0, "manufacturer": 32, "product": 28, "serialNumber": 2795104075, "softwareVersion": 149.84, "samples": [{"t": "2022-08-30T15:53:12Z"}, {"t": "2022-08-30T15:53:13Z"}, {"t": "2022-08-30T16:06:19Z"}, {"t": "2022-08-30T16:14:20Z"}, {"t": "2022-08-30T16:23:20Z"}, {"t": "2022-08-30T16:35:20Z"}, {"t": "2022-08-30T16:36:20Z"}, {"t": "2022-08-30T16:48:21Z"}, {"t": "2022-08-30T16:58:21Z"}, {"t": "2022-08-30T17:06:21Z"}]},
+    {"deviceIndex": 1, "manufacturer": 32, "product": 26, "serialNumber": 65535, "antDeviceNumber": 48954, "antplusDeviceType": 123, "deviceType": 123, "sourceType": 1, "softwareVersion": 4.00, "samples": [{"t": "2022-08-30T15:53:12Z"}, {"t": "2022-08-30T16:01:19Z"}, {"t": "2022-08-30T16:11:20Z"}, {"t": "2022-08-30T16:21:20Z"}, {"t": "2022-08-30T16:31:20Z"}, {"t": "2022-08-30T16:41:20Z"}, {"t": "2022-08-30T16:51:21Z"}, {"t": "2022-08-30T17:01:21Z"}]},
+    {"deviceIndex": 2, "samples": [{"t": "2022-08-30T15:53:12Z"}, {"t": "2022-08-30T16:01:19Z"}, {"t": "2022-08-30T16:11:20Z"}, {"t": "2022-08-30T16:21:20Z"}, {"t": "2022-08-30T16:31:20Z"}, {"t": "2022-08-30T16:41:20Z"}, {"t": "2022-08-30T16:51:21Z"}, {"t": "2022-08-30T16:51:24Z"}, {"t": "2022-08-30T17:01:21Z"}]},
+    {"deviceIndex": 3, "antDeviceNumber": 6275, "antplusDeviceType": 120, "deviceType": 120, "sourceType": 1, "samples": [{"t": "2022-08-30T15:53:12Z", "status": 2}, {"t": "2022-08-30T16:01:19Z", "status": 2}, {"t": "2022-08-30T16:11:20Z", "status": 2}, {"t": "2022-08-30T16:21:20Z", "status": 2}, {"t": "2022-08-30T16:31:20Z", "status": 2}, {"t": "2022-08-30T16:41:20Z", "status": 2}, {"t": "2022-08-30T16:51:21Z", "status": 2}, {"t": "2022-08-30T17:01:21Z", "status": 2}]},
+    {"deviceIndex": 4, "manufacturer": 263, "product": 12, "serialNumber": 875621649, "antDeviceNumber": 52175, "antplusDeviceType": 11, "deviceType": 11, "sourceType": 1, "softwareVersion": 48.00, "samples": [{"t": "2022-08-30T15:53:12Z", "voltage": 3.945, "status": 2}, {"t": "2022-08-30T16:01:19Z", "voltage": 3.945, "status": 2}, {"t": "2022-08-30T16:11:20Z", "voltage": 3.945, "status": 2}, {"t": "2022-08-30T16:21:20Z", "voltage": 3.945, "status": 2}, {"t": "2022-08-30T16:31:20Z", "voltage": 3.945, "status": 2}, {"t": "2022-08-30T16:41:20Z", "voltage": 3.945, "status": 2}, {"t": "2022-08-30T16:51:21Z", "voltage": 3.945, "status": 2}, {"t": "2022-08-30T17:01:21Z", "voltage": 3.945, "status": 2}]}
+  ],
   "summary": {
     "points": 4601,
     "distanceKm": 33.82,

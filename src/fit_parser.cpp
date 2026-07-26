@@ -8,6 +8,7 @@
 #include <fit_record_mesg.hpp>
 #include <fit_session_mesg.hpp>
 #include <fit_file_id_mesg.hpp>
+#include <fit_device_info_mesg.hpp>
 #include <fit_profile.hpp>
 
 /**
@@ -76,9 +77,71 @@ public:
     std::vector<Coordinate> coordinates;
     SessionTotals session;
     FileIdInfo fileId;
+    std::vector<DeviceInfoRecord> deviceInfos;
 
     void OnMesg(fit::Mesg& mesg) override {
         const auto num = mesg.GetNum();
+
+        // Per-sensor identity + battery telemetry (battery design 2026-07-26).
+        // Kept verbatim, decode order — grouping/derivation happens downstream.
+        if (num == FIT_MESG_NUM_DEVICE_INFO) {
+            fit::DeviceInfoMesg deviceMesg(mesg);
+            DeviceInfoRecord rec;
+            if (deviceMesg.IsTimestampValid()) {
+                rec.hasTimestamp = true;
+                rec.timestamp = deviceMesg.GetTimestamp();
+            }
+            if (deviceMesg.IsDeviceIndexValid()) {
+                rec.hasDeviceIndex = true;
+                rec.deviceIndex = deviceMesg.GetDeviceIndex();
+            }
+            if (deviceMesg.IsDeviceTypeValid()) {
+                rec.hasDeviceType = true;
+                rec.deviceType = deviceMesg.GetDeviceType();
+            }
+            if (deviceMesg.IsAntplusDeviceTypeValid()) {
+                rec.hasAntplusDeviceType = true;
+                rec.antplusDeviceType = deviceMesg.GetAntplusDeviceType();
+            }
+            if (deviceMesg.IsManufacturerValid()) {
+                rec.hasManufacturer = true;
+                rec.manufacturer = deviceMesg.GetManufacturer();
+            }
+            if (deviceMesg.IsProductValid()) {
+                rec.hasProduct = true;
+                rec.product = deviceMesg.GetProduct();
+            }
+            if (deviceMesg.IsSerialNumberValid()) {
+                rec.hasSerialNumber = true;
+                rec.serialNumber = deviceMesg.GetSerialNumber();
+            }
+            if (deviceMesg.IsAntDeviceNumberValid()) {
+                rec.hasAntDeviceNumber = true;
+                rec.antDeviceNumber = deviceMesg.GetAntDeviceNumber();
+            }
+            if (deviceMesg.IsSourceTypeValid()) {
+                rec.hasSourceType = true;
+                rec.sourceType = static_cast<uint8_t>(deviceMesg.GetSourceType());
+            }
+            if (deviceMesg.IsSoftwareVersionValid()) {
+                rec.hasSoftwareVersion = true;
+                rec.softwareVersion = deviceMesg.GetSoftwareVersion();
+            }
+            if (deviceMesg.IsBatteryVoltageValid()) {
+                rec.hasBatteryVoltage = true;
+                rec.batteryVoltage = deviceMesg.GetBatteryVoltage();
+            }
+            if (deviceMesg.IsBatteryStatusValid()) {
+                rec.hasBatteryStatus = true;
+                rec.batteryStatus = deviceMesg.GetBatteryStatus();
+            }
+            if (deviceMesg.IsBatteryLevelValid()) {
+                rec.hasBatteryLevel = true;
+                rec.batteryLevel = deviceMesg.GetBatteryLevel();
+            }
+            deviceInfos.push_back(rec);
+            return;
+        }
 
         if (num == FIT_MESG_NUM_FILE_ID) {
             fit::FileIdMesg fileIdMesg(mesg);
@@ -210,6 +273,7 @@ RideStatistic FitParser::extractCoordinates() {
 
     RideStatistic stats;
     stats.coordinates = listener.coordinates;
+    stats.deviceInfos = listener.deviceInfos;
     stats.distanceKm = 0.0;
     stats.durationMin = 0.0;
     stats.startTime = 0;
