@@ -1,0 +1,100 @@
+"tests/expected/2022-10-09-084355-ELEMNT BFF6-137-0.json"
+  s_4775ab9d99987a::t_f79434f9013da9 5157-5163
+tests/expected/2022-10-22-Z1-zwift.json
+  s_4775ab9d99987a::t_7bb1d83aabcb82 5468-5470
+tests/expected/2022-10-07-Zwift_Ocean_Lava_Cliffside_Loop_in_Watopia.json
+  s_4775ab9d99987a::t_a9cf7f3ddf6c8e 5482-5484
+CMakeLists.txt
+  s_4775ab9d99987a::t_40553c6d4633d0 2
+"tests/expected/2022-11-05-093312-ELEMNT BFF6-147-0.json"
+  s_4775ab9d99987a::t_a8fc4cea231885 8832-8838
+"tests/expected/2022-10-19-125124-ELEMNT BFF6-140-0.json"
+  s_4775ab9d99987a::t_1dc42e628824bf 8667-8673
+src/fit_writer.cpp
+  s_4775ab9d99987a::t_66bb32c2773fa1 15
+  s_4775ab9d99987a::t_e0d334dafbe5b7 319-321
+  s_4775ab9d99987a::t_310bdeacfbb09e 55-77
+"tests/expected/2022-10-23-084512-ELEMNT BFF6-141-0.json"
+  s_4775ab9d99987a::t_851a8244fc4b36 11902-11908
+src/main.cpp
+  s_4775ab9d99987a::t_eafe12f240c044 65,68
+"tests/expected/2022-08-30-155312-ELEMNT BFF6-125-0.json"
+  s_4775ab9d99987a::t_13415135cacefc 4605-4611
+"tests/expected/2022-09-11-083647-ELEMNT BFF6-131-0.json"
+  s_4775ab9d99987a::t_c0c570fc53ceed 12906-12912
+"tests/expected/2022-08-27-094047-ELEMNT BFF6-124-0.json"
+  s_4775ab9d99987a::t_817f7872a51186 13164-13170
+"tests/expected/2022-11-02-105229-ELEMNT BFF6-146-0.json"
+  s_4775ab9d99987a::t_3f1000aecca92f 6340-6346
+src/device_info_record.h
+  s_4775ab9d99987a::t_1da8640191cf80 1-55
+tests/expected/2022-09-19-Zwift_Flat_Route_in_Watopia.json
+  s_4775ab9d99987a::t_3997d2127b22a1 3629-3631
+tests/expected/2022-10-01-Zwift-5x110%ftp.json
+  s_4775ab9d99987a::t_860b3037e67c85 3914-3916
+"tests/expected/2022-10-12-121153-ELEMNT BFF6-138-0.json"
+  s_4775ab9d99987a::t_7ebb4bd4c1e4d6 4806-4812
+"tests/expected/2022-10-26-084113-ELEMNT BFF6-142-0.json"
+  s_4775ab9d99987a::t_153411552ecab0 5079-5085
+src/fit_parser.h
+  s_4775ab9d99987a::t_76058f2f0e6cad 108-111
+  s_4775ab9d99987a::t_3add639953d7ff 8-9
+"tests/expected/2022-09-21-104104-ELEMNT BFF6-133-0.json"
+  s_4775ab9d99987a::t_30dcffe2df25d7 12115-12121
+tests/expected/2022-10-25-Z1-test.json
+  s_4775ab9d99987a::t_fba06357c72ad5 5446-5448
+src/fit_parser.cpp
+  s_4775ab9d99987a::t_0a7461e93d6fd3 80,85-144
+  s_4775ab9d99987a::t_17e8f38aa9b03d 145
+  s_4775ab9d99987a::t_7982d059b98a62 276
+  s_4775ab9d99987a::t_4a126edf7c93ac 11
+"tests/expected/2022-09-03-105856-ELEMNT BFF6-128-0.json"
+  s_4775ab9d99987a::t_aebd39081243ab 13345-13351
+"tests/expected/2022-10-26-104447-ELEMNT BFF6-143-0.json"
+  s_4775ab9d99987a::t_7557a9a9d435ad 4520-4526
+"tests/expected/2022-10-02-114306-ELEMNT BFF6-136-0.json"
+  s_4775ab9d99987a::t_b35dc028c8e94a 10409-10415
+"tests/expected/2022-09-02-154654-ELEMNT BFF6-126-0.json"
+  s_4775ab9d99987a::t_25ee9daf649647 5012-5018
+tests/expected/2022-10-14-THRESHOLD_MICROBURSTS_in_Paris.json
+  s_4775ab9d99987a::t_7e325b34654997 3692-3694
+"tests/expected/2022-10-28-174525-ELEMNT BFF6-144-0.json"
+  s_4775ab9d99987a::t_de8b440e6018b0 5488-5493
+tests/expected/2022-10-17_Xwift_D2.json
+  s_4775ab9d99987a::t_c9c031dcc2830e 5515-5517
+"tests/expected/2022-09-14-122832-ELEMNT BFF6-132-0.json"
+  s_4775ab9d99987a::t_a24a922f5e9b72 4536-4542
+tests/expected/2022-11-04-Knickerbocker_in_New_York.json
+  s_4775ab9d99987a::t_dd3474de9d1d1f 3681-3683
+src/track_point.h
+  s_4775ab9d99987a::t_6a0772507002db 8-9
+  s_4775ab9d99987a::t_388fc7dc1f4811 54-58
+"tests/expected/2022-09-06-155832-ELEMNT BFF6-129-0.json"
+  s_4775ab9d99987a::t_1ca82175e0e2f0 4832-4838
+src/json_output.cpp
+  s_4775ab9d99987a::t_18308fb4844b23 77-140
+"tests/expected/2022-10-30-095522-ELEMNT BFF6-145-0.json"
+  s_4775ab9d99987a::t_db16044f990fb5 13310-13316
+"tests/expected/2022-10-16-093902-ELEMNT BFF6-139-0.json"
+  s_4775ab9d99987a::t_0d7b9d8f833cc3 10816-10822
+"tests/expected/2022-09-25-083415-ELEMNT BFF6-134-0.json"
+  s_4775ab9d99987a::t_4d3983a9db3249 14857-14863
+docs/RELEASING.md
+  s_4775ab9d99987a::t_03e911ba0a0778 1-44
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.16",
+  "base_commit_sha": "56e9ba2e0808c33cdedc240fcbc20c43d6ac3cc0",
+  "prompts": {},
+  "sessions": {
+    "s_4775ab9d99987a": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "0eb40e80-e45d-4a38-be41-493d4c652a76",
+        "model": "claude-fable-5"
+      },
+      "human_author": null
+    }
+  }
+}

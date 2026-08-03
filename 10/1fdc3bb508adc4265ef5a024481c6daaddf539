@@ -1,0 +1,88 @@
+src/main.cpp
+  s_3d2b183e96eabf::t_c1290c8b154ba8 65,68
+CMakeLists.txt
+  s_3d2b183e96eabf::t_17a65d33619b72 2
+src/fit_parser.h
+  s_3d2b183e96eabf::t_25bd78a5abbce6 103-108
+src/fit_parser.cpp
+  s_3d2b183e96eabf::t_d81340f146fc87 166-173
+  s_3d2b183e96eabf::t_d938713b548ce3 39-40,54-57
+  s_3d2b183e96eabf::t_2ef4162663e5a6 370-381
+  s_3d2b183e96eabf::t_92b4938db15f7a 263-266
+src/json_output.cpp
+  s_3d2b183e96eabf::t_51fcc758373b3e 206-214
+"tests/expected/2022-08-27-094047-ELEMNT BFF6-124-0.json"
+  s_3d2b183e96eabf::t_83bdf59c165b98 13197-13199
+"tests/expected/2022-08-30-155312-ELEMNT BFF6-125-0.json"
+  s_3d2b183e96eabf::t_41fdc1197282bc 4638-4640
+"tests/expected/2022-09-02-154654-ELEMNT BFF6-126-0.json"
+  s_3d2b183e96eabf::t_7357d89befaad5 5045-5047
+"tests/expected/2022-09-03-105856-ELEMNT BFF6-128-0.json"
+  s_3d2b183e96eabf::t_467618432a6c46 13378-13380
+"tests/expected/2022-09-06-155832-ELEMNT BFF6-129-0.json"
+  s_3d2b183e96eabf::t_0ac851c06ae376 4865-4867
+"tests/expected/2022-09-11-083647-ELEMNT BFF6-131-0.json"
+  s_3d2b183e96eabf::t_0a46eee7d30d4f 12939-12941
+"tests/expected/2022-09-14-122832-ELEMNT BFF6-132-0.json"
+  s_3d2b183e96eabf::t_6a651d119255b1 4569-4571
+tests/expected/2022-09-19-Zwift_Flat_Route_in_Watopia.json
+  s_3d2b183e96eabf::t_8014347413f8fe 3658-3659
+"tests/expected/2022-09-21-104104-ELEMNT BFF6-133-0.json"
+  s_3d2b183e96eabf::t_6aa18e1a239d40 12148-12150
+"tests/expected/2022-09-25-083415-ELEMNT BFF6-134-0.json"
+  s_3d2b183e96eabf::t_47d248f10be02d 14890-14892
+tests/expected/2022-10-01-Zwift-5x110%ftp.json
+  s_3d2b183e96eabf::t_c62eb57b205541 3943-3944
+"tests/expected/2022-10-02-114306-ELEMNT BFF6-136-0.json"
+  s_3d2b183e96eabf::t_e355c43d05b25e 10442-10444
+tests/expected/2022-10-07-Zwift_Ocean_Lava_Cliffside_Loop_in_Watopia.json
+  s_3d2b183e96eabf::t_a9fb236a611c55 5511-5512
+"tests/expected/2022-10-09-084355-ELEMNT BFF6-137-0.json"
+  s_3d2b183e96eabf::t_110e84ef753485 5190-5192
+"tests/expected/2022-10-12-121153-ELEMNT BFF6-138-0.json"
+  s_3d2b183e96eabf::t_72c3f27aa1bea4 4839-4841
+tests/expected/2022-10-14-THRESHOLD_MICROBURSTS_in_Paris.json
+  s_3d2b183e96eabf::t_cb06d3db9697a8 3721-3722
+"tests/expected/2022-10-16-093902-ELEMNT BFF6-139-0.json"
+  s_3d2b183e96eabf::t_500b1cb9329cbd 10849-10851
+tests/expected/2022-10-17_Xwift_D2.json
+  s_3d2b183e96eabf::t_065e455358b98e 5544-5545
+"tests/expected/2022-10-19-125124-ELEMNT BFF6-140-0.json"
+  s_3d2b183e96eabf::t_f1b89fa2f3ed82 8700-8702
+tests/expected/2022-10-22-Z1-zwift.json
+  s_3d2b183e96eabf::t_1a5f46c84f2d98 5497-5498
+"tests/expected/2022-10-23-084512-ELEMNT BFF6-141-0.json"
+  s_3d2b183e96eabf::t_e3625da78160ac 11935-11937
+tests/expected/2022-10-25-Z1-test.json
+  s_3d2b183e96eabf::t_d9389d9c7467bb 5475-5476
+"tests/expected/2022-10-26-084113-ELEMNT BFF6-142-0.json"
+  s_3d2b183e96eabf::t_4932d0997e3965 5112-5114
+"tests/expected/2022-10-26-104447-ELEMNT BFF6-143-0.json"
+  s_3d2b183e96eabf::t_2c6de03babe3ac 4553-4555
+"tests/expected/2022-10-28-174525-ELEMNT BFF6-144-0.json"
+  s_3d2b183e96eabf::t_a41388bb8cfbe4 5520-5522
+"tests/expected/2022-10-30-095522-ELEMNT BFF6-145-0.json"
+  s_3d2b183e96eabf::t_8c8ac0c27792d8 13343-13345
+"tests/expected/2022-11-02-105229-ELEMNT BFF6-146-0.json"
+  s_3d2b183e96eabf::t_25aedca40963f4 6373-6375
+tests/expected/2022-11-04-Knickerbocker_in_New_York.json
+  s_3d2b183e96eabf::t_17b2081288e3c0 3710-3711
+"tests/expected/2022-11-05-093312-ELEMNT BFF6-147-0.json"
+  s_3d2b183e96eabf::t_f771b0f6f36cab 8865-8867
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.20",
+  "base_commit_sha": "101fdc3bb508adc4265ef5a024481c6daaddf539",
+  "prompts": {},
+  "sessions": {
+    "s_3d2b183e96eabf": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "84a9f2d4-826b-48f8-a1fb-12c802f37437",
+        "model": "claude-opus-5"
+      },
+      "human_author": "X. Koevoet <development@bikecoders.life>"
+    }
+  }
+}
