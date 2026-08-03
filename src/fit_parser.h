@@ -100,6 +100,12 @@ struct RideStatistic {
     uint16_t garminProduct = 0;      // FIT_GARMIN_PRODUCT enum (e.g. 20533=Tacx Training App Win)
     bool hasProductName = false;
     std::string productName;         // Raw product_name string (ASCII subset of UTF-8). May be empty.
+    bool hasSessionStartTime = false;
+    uint32_t sessionStartTime = 0;   // Session.start_time, FIT epoch seconds
+    bool hasFileIdSerialNumber = false;
+    uint32_t fileIdSerialNumber = 0; // FileId.serial_number — the creator device
+    bool hasFileIdTimeCreated = false;
+    uint32_t fileIdTimeCreated = 0;  // FileId.time_created, FIT epoch seconds
     bool hasSport = false;
     uint8_t sport = 0;               // FIT_SPORT enum (2=CYCLING, 10=TRAINING)
     bool hasSubSport = false;

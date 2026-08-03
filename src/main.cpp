@@ -62,9 +62,10 @@ void printUsage(const char* programName) {
  * Print version information
  */
 void printVersion() {
-    std::cout << "BikeCodersLife FIT Parser v2.2.0" << std::endl;
+    std::cout << "BikeCodersLife FIT Parser v2.3.0" << std::endl;
     std::cout << "Built with Garmin FIT SDK + pugixml" << std::endl;
     std::cout << "Supports: FIT, GPX, TCX input | FIT, JSON output" << std::endl;
+    std::cout << "v2.3.0: emit Session.start_time + FileId.serial_number/time_created (cross-provider ride identity)" << std::endl;
     std::cout << "v2.2.0: decode device_info (per-sensor identity + battery voltage/status/level) into a top-level devices[] JSON array; GPS strip passes device_info through so archived rides keep battery telemetry (battery two-track design 2026-07-26)" << std::endl;
     std::cout << "v2.1.6: smoothedMaxSpeedKmh uses a rolling MEDIAN (was mean — a single GPS jump inflated it to 500+ km/h); de-spike GPS fixes that don't fit the line between neighbours (drops the pre-lock (0,0) fix that otherwise stretches the route to null-island)" << std::endl;
     std::cout << "v2.1.5: emit normalizedPower (Coggan 30s rolling, coasting = 0 W) — consistent with coasting-inclusive avgPower instead of the held-power-across-gaps inflation" << std::endl;

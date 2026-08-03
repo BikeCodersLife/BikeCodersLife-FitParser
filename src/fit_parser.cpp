@@ -36,6 +36,8 @@ struct SessionTotals {
     uint8_t sport = 0;
     bool hasSubSport = false;
     uint8_t subSport = 0;
+    bool hasStartTime = false;
+    uint32_t startTime = 0;
 };
 
 /**
@@ -49,6 +51,10 @@ struct FileIdInfo {
     uint16_t garminProduct = 0;
     bool hasProductName = false;
     std::string productName;
+    bool hasSerialNumber = false;
+    uint32_t serialNumber = 0;
+    bool hasTimeCreated = false;
+    uint32_t timeCreated = 0;
 };
 
 /**
@@ -157,6 +163,14 @@ public:
                 fileId.hasProductName = true;
                 fileId.productName = wstringToUtf8Lossy(fileIdMesg.GetProductName());
             }
+            if (fileIdMesg.IsSerialNumberValid()) {
+                fileId.hasSerialNumber = true;
+                fileId.serialNumber = fileIdMesg.GetSerialNumber();
+            }
+            if (fileIdMesg.IsTimeCreatedValid()) {
+                fileId.hasTimeCreated = true;
+                fileId.timeCreated = fileIdMesg.GetTimeCreated();
+            }
             return;
         }
 
@@ -245,6 +259,10 @@ public:
             if (sessionMesg.IsSubSportValid()) {
                 session.hasSubSport = true;
                 session.subSport = static_cast<uint8_t>(sessionMesg.GetSubSport());
+            }
+            if (sessionMesg.IsStartTimeValid()) {
+                session.hasStartTime = true;
+                session.startTime = sessionMesg.GetStartTime();
             }
         }
     }
@@ -348,6 +366,18 @@ RideStatistic FitParser::extractCoordinates() {
     if (listener.fileId.hasProductName) {
         stats.hasProductName = true;
         stats.productName = listener.fileId.productName;
+    }
+    if (listener.fileId.hasSerialNumber) {
+        stats.hasFileIdSerialNumber = true;
+        stats.fileIdSerialNumber = listener.fileId.serialNumber;
+    }
+    if (listener.fileId.hasTimeCreated) {
+        stats.hasFileIdTimeCreated = true;
+        stats.fileIdTimeCreated = listener.fileId.timeCreated;
+    }
+    if (listener.session.hasStartTime) {
+        stats.hasSessionStartTime = true;
+        stats.sessionStartTime = listener.session.startTime;
     }
     if (listener.session.hasSport) {
         stats.hasSport = true;

@@ -203,6 +203,15 @@ void JsonOutput::writeCoordinates(const RideStatistic& stats) {
     if (stats.hasManufacturer) {
         std::cout << "    \"manufacturer\": " << stats.manufacturer << "," << std::endl;
     }
+    if (stats.hasSessionStartTime) {
+        std::cout << "    \"sessionStartTime\": \"" << timestampToIso8601(stats.sessionStartTime) << "\"," << std::endl;
+    }
+    if (stats.hasFileIdSerialNumber) {
+        std::cout << "    \"fileIdSerialNumber\": " << stats.fileIdSerialNumber << "," << std::endl;
+    }
+    if (stats.hasFileIdTimeCreated) {
+        std::cout << "    \"fileIdTimeCreated\": \"" << timestampToIso8601(stats.fileIdTimeCreated) << "\"," << std::endl;
+    }
     if (stats.hasGarminProduct) {
         std::cout << "    \"garminProduct\": " << stats.garminProduct << "," << std::endl;
     }

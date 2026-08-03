@@ -5541,6 +5541,8 @@
     "sessionElapsedSec": 5629,
     "sessionMovingSec": 5630,
     "manufacturer": 260,
+    "sessionStartTime": "2022-10-17T18:14:52Z",
+    "fileIdTimeCreated": "2022-10-17T18:14:50Z",
     "sport": 2,
     "subSport": 58,
     "isIndoor": true,
