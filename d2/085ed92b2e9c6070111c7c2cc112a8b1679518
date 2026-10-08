@@ -1,0 +1,95 @@
+"tests/expected/2022-10-26-104447-ELEMNT BFF6-143-0.json"
+  s_643dc4bb5a582d::t_28d08a6a9f9fa5 4540
+"tests/expected/2022-10-23-084512-ELEMNT BFF6-141-0.json"
+  s_643dc4bb5a582d::t_4b383d2e52d835 11922
+tests/expected/unchanged/negative-elevation-below-sea-level.gpx.json
+  s_643dc4bb5a582d::t_1a79100f594cc5 1-36
+src/gpx_parser.cpp
+  s_643dc4bb5a582d::t_9194224cb9fd2a 106-120
+tests/fixtures/spike-teleport.gpx
+  s_643dc4bb5a582d::t_03badbfda25074 1-609
+tests/expected/2022-10-25-Z1-test.json
+  s_643dc4bb5a582d::t_c28234e7da1799 5462
+tests/expected/unchanged/fast-descent.gpx.json
+  s_643dc4bb5a582d::t_0ff7f1f1f11757 1-180
+tests/fixtures/make_gps_spike_fixtures.py
+  s_643dc4bb5a582d::t_f0bb95eafe4201 1-124
+tests/fixtures/fast-descent.gpx
+  s_643dc4bb5a582d::t_53b527726611b5 1-169
+tests/fixtures/globalsat-catchup.gpx
+  s_643dc4bb5a582d::t_ae3a32db052152 1-142
+"tests/expected/2022-11-02-105229-ELEMNT BFF6-146-0.json"
+  s_643dc4bb5a582d::t_c99c1c3cd464e8 6360
+tests/expected/unchanged/Avondrit-Wieringerwerf.gpx.json
+  s_643dc4bb5a582d::t_232575a1cd57c1 1-24
+src/tcx_parser.cpp
+  s_643dc4bb5a582d::t_be36b7c639e808 148-150,247-256
+"tests/expected/2022-10-02-114306-ELEMNT BFF6-136-0.json"
+  s_643dc4bb5a582d::t_1d100bbdf0ed68 10429
+src/track_point.h
+  s_643dc4bb5a582d::t_ee47e5471af713 55-64
+tests/run_tests.sh
+  s_643dc4bb5a582d::t_63cbd6d3b73da4 149,356-468
+  s_643dc4bb5a582d::t_ce2f5f9787e938 150-151
+"tests/expected/2022-10-16-093902-ELEMNT BFF6-139-0.json"
+  s_643dc4bb5a582d::t_389a2c83b4801c 10836
+"tests/expected/2022-08-30-155312-ELEMNT BFF6-125-0.json"
+  s_643dc4bb5a582d::t_7be75efc3f689f 4625
+"tests/expected/2022-09-03-105856-ELEMNT BFF6-128-0.json"
+  s_643dc4bb5a582d::t_b29ec4b1579594 13365
+tests/expected/unchanged/tcx-no-sensors.tcx.json
+  s_643dc4bb5a582d::t_4e80c7d9ee99b4 1-31
+"tests/expected/2022-10-28-174525-ELEMNT BFF6-144-0.json"
+  s_643dc4bb5a582d::t_2908cac4bb04c7 5507
+src/fit_parser.cpp
+  s_643dc4bb5a582d::t_696a97ecb3baf3 276,474-475,484-498,501-510,518-523,525,528-530,533,536,548,621-622,624-626,628-630,632-634,636-638,640,760,765,767-770
+  s_643dc4bb5a582d::t_2153a8b1cde0a6 292-326,524,623,627,631,635,639
+tests/expected/unchanged/tcx-with-sensors.tcx.json
+  s_643dc4bb5a582d::t_607b42160a04dd 1-41
+tests/fixtures/spike-sparse-catchup.gpx
+  s_643dc4bb5a582d::t_1cdba212829515 1-92
+tests/fixtures/spike-teleport.tcx
+  s_643dc4bb5a582d::t_552223212d678c 1-613
+README.md
+  s_643dc4bb5a582d::t_0ef8ad91bcfc15 117-152
+CMakeLists.txt
+  s_643dc4bb5a582d::t_5f2f1c2625dc2d 2
+src/fit_writer.cpp
+  s_643dc4bb5a582d::t_1bea4cc4b52e70 234-241
+tests/expected/unchanged/with-power-and-hr.gpx.json
+  s_643dc4bb5a582d::t_9b00defda9e4f8 1-41
+"tests/expected/2022-10-12-121153-ELEMNT BFF6-138-0.json"
+  s_643dc4bb5a582d::t_0d40931b77136c 4826
+src/main.cpp
+  s_643dc4bb5a582d::t_5d021657a8c2c2 65,68,146-204,217,221,223,225,227,239-245,252-254
+"tests/expected/2022-10-09-084355-ELEMNT BFF6-137-0.json"
+  s_643dc4bb5a582d::t_eeddb0b685e82c 5177
+"tests/expected/2022-09-06-155832-ELEMNT BFF6-129-0.json"
+  s_643dc4bb5a582d::t_f951f0d4fd9ce8 4852
+"tests/expected/2022-10-19-125124-ELEMNT BFF6-140-0.json"
+  s_643dc4bb5a582d::t_f945ceef9c31b8 8687
+docs/RELEASING.md
+  s_643dc4bb5a582d::t_cb0773974da2ee 13
+"tests/expected/2022-10-26-084113-ELEMNT BFF6-142-0.json"
+  s_643dc4bb5a582d::t_fb2315abd47119 5099
+src/fit_parser.h
+  s_643dc4bb5a582d::t_26f2a3bfa0626d 69
+  s_643dc4bb5a582d::t_71d897a956b6fc 161
+  s_643dc4bb5a582d::t_9a2b6752376df4 142-160
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "d2085ed92b2e9c6070111c7c2cc112a8b1679518",
+  "prompts": {},
+  "sessions": {
+    "s_643dc4bb5a582d": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "f815578e-aeef-498b-a337-24ba2730f239",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "X. Koevoet <development@bikecoders.life>"
+    }
+  }
+}
