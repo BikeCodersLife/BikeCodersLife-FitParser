@@ -1,0 +1,38 @@
+tests/run_tests.sh
+  s_643dc4bb5a582d::t_e400e85a1b23fb 247-354
+  s_643dc4bb5a582d::t_f70cd50ac7baf6 246
+src/main.cpp
+  s_643dc4bb5a582d::t_10affb18d7ba91 181-186,191,194-204,208-209,216,219-220
+  s_643dc4bb5a582d::t_328e7ce1caac79 210-215,217-218
+  s_643dc4bb5a582d::t_2f0accd749ba39 65,68,221
+src/gpx_parser.cpp
+  s_643dc4bb5a582d::t_8544feb5a315be 199-203
+CMakeLists.txt
+  s_643dc4bb5a582d::t_b2ab90e0bc5999 2
+docs/RELEASING.md
+  s_643dc4bb5a582d::t_017a00ce640c38 13
+src/fit_parser.cpp
+  s_643dc4bb5a582d::t_f784ccb7e6d44f 273-278,280-281,283-285,287,289-290,292,294,338,556-573,575-577,579-608,610-649,651-720
+src/fit_parser.h
+  s_643dc4bb5a582d::t_1fb39236a20339 14-22,24-31,54-57,60-73,75-80,127-141
+tests/fixtures/tcx-no-sensors.tcx
+  s_643dc4bb5a582d::t_23be03c9c3dc8c 1-65
+tests/fixtures/tcx-with-sensors.tcx
+  s_643dc4bb5a582d::t_e2a6651a83e036 1-93
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "e3bbe093b3a6f11a3b4c32d9a91c37856c6d5171",
+  "prompts": {},
+  "sessions": {
+    "s_643dc4bb5a582d": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "f815578e-aeef-498b-a337-24ba2730f239",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "X. Koevoet <development@bikecoders.life>"
+    }
+  }
+}
