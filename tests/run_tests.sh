@@ -244,6 +244,115 @@ else
 fi
 
 echo ""
+echo "--- GPX/TCX sensor fields (v2.3.1) ---"
+
+# Up to v2.3.0 the GPX/TCX → JSON path left every Coordinate sensor field and
+# has* flag uninitialised: a sensorless file emitted one garbage power /
+# cadence / heartRate value on every point (e.g. power 59820, cadence 176),
+# and a file WITH sensors lost its real values. The summary's has*Data flags
+# were uninitialised too.
+
+# A sensorless GPX / TCX must emit no heartRate / power / cadence / temperature
+# on any point, and no HR / power / cadence aggregates in the summary.
+for sensorless in "no-sensors-gps-only.gpx" "tcx-no-sensors.tcx"; do
+    TOTAL=$((TOTAL + 1))
+    if "$PARSER" "$FIXTURES_DIR/$sensorless" 2>/dev/null > "$TMP_DIR/sensorless.json" && python3 - "$TMP_DIR/sensorless.json" <<'PY' 2>/dev/null
+import json, sys
+d = json.load(open(sys.argv[1]))
+assert len(d['coordinates']) > 0
+for p in d['coordinates']:
+    for k in ('heartRate', 'power', 'cadence', 'temperature'):
+        assert k not in p, f'{k}={p[k]} on a sensorless point'
+s = d['summary']
+for k in ('avgHeartRate', 'maxHeartRate', 'avgPower', 'maxPower', 'normalizedPower',
+          'avgCadence', 'maxCadence', 'coastingTimeSec'):
+    assert k not in s, f'summary {k}={s[k]} for a sensorless file'
+PY
+    then
+        pass "$sensorless emits no sensor fields"
+    else
+        fail "$sensorless emits sensor fields it does not have"
+    fi
+done
+
+# A GPX / TCX WITH sensor extensions must emit the real per-point values
+# (compared point by point with the fixture) and matching summary maxima.
+for sensored in "with-power-and-hr.gpx" "tcx-with-sensors.tcx"; do
+    TOTAL=$((TOTAL + 1))
+    if "$PARSER" "$FIXTURES_DIR/$sensored" 2>/dev/null > "$TMP_DIR/sensored.json" && python3 - "$FIXTURES_DIR/$sensored" "$TMP_DIR/sensored.json" <<'PY' 2>/dev/null
+import json, sys
+import xml.etree.ElementTree as ET
+
+def local(tag):
+    return tag.rsplit('}', 1)[-1].split(':')[-1]
+
+root = ET.parse(sys.argv[1]).getroot()
+is_gpx = local(root.tag) == 'gpx'
+point_tag = 'trkpt' if is_gpx else 'Trackpoint'
+names = {'hr': 'heartRate', 'cad': 'cadence', 'power': 'power', 'atemp': 'temperature',
+         'HeartRateBpm': 'heartRate', 'Cadence': 'cadence', 'Watts': 'power'}
+expected = []
+for pt in root.iter():
+    if local(pt.tag) != point_tag:
+        continue
+    want = {}
+    for el in pt.iter():
+        key = names.get(local(el.tag))
+        if key is None:
+            continue
+        text = el.findtext('{*}Value') if local(el.tag) == 'HeartRateBpm' else el.text
+        v = int(float(text))
+        # The readers treat 0 hr / cad / power as "not available".
+        if key == 'temperature' or v > 0:
+            want[key] = v
+    expected.append(want)
+
+d = json.load(open(sys.argv[2]))
+coords = d['coordinates']
+assert len(coords) == len(expected), f'{len(coords)} points, fixture has {len(expected)}'
+assert any(expected), 'fixture carries no sensor values'
+for i, (p, want) in enumerate(zip(coords, expected)):
+    got = {k: p[k] for k in ('heartRate', 'power', 'cadence', 'temperature') if k in p}
+    assert got == want, f'point {i}: got {got}, fixture {want}'
+s = d['summary']
+for key, summary_key in (('heartRate', 'maxHeartRate'), ('power', 'maxPower'), ('cadence', 'maxCadence')):
+    values = [w[key] for w in expected if key in w]
+    assert s[summary_key] == max(values), f'{summary_key} {s[summary_key]} != {max(values)}'
+assert 0 < s['avgPower'] <= s['maxPower']
+PY
+    then
+        pass "$sensored emits its real HR / power / cadence / temperature"
+    else
+        fail "$sensored sensor values lost or wrong"
+    fi
+done
+
+# GPX/TCX parsed directly must report the same record-stream summary as the
+# same file converted to FIT first (both run the shared stream-stats pass).
+for source in "with-power-and-hr.gpx" "tcx-with-sensors.tcx"; do
+    TOTAL=$((TOTAL + 1))
+    converted="$TMP_DIR/summary-${source%.*}.fit"
+    if "$PARSER" "$FIXTURES_DIR/$source" 2>/dev/null > "$TMP_DIR/direct.json" \
+        && "$PARSER" "$FIXTURES_DIR/$source" --convert "$converted" 2>/dev/null \
+        && "$PARSER" "$converted" 2>/dev/null > "$TMP_DIR/viafit.json" \
+        && python3 - "$TMP_DIR/direct.json" "$TMP_DIR/viafit.json" <<'PY' 2>/dev/null
+import json, sys
+direct = json.load(open(sys.argv[1]))['summary']
+viafit = json.load(open(sys.argv[2]))['summary']
+keys = ('avgHeartRate', 'maxHeartRate', 'avgPower', 'maxPower', 'normalizedPower',
+        'avgCadence', 'maxCadence', 'avgSpeed', 'maxSpeed', 'smoothedMaxSpeedKmh',
+        'movingTimeSec', 'coastingTimeSec')
+diff = {k: (direct.get(k), viafit.get(k)) for k in keys if direct.get(k) != viafit.get(k)}
+assert not diff, f'direct vs via-FIT summary differ: {diff}'
+PY
+    then
+        pass "$source summary matches its FIT conversion"
+    else
+        fail "$source summary differs from its FIT conversion"
+    fi
+done
+
+echo ""
 echo "========================================="
 echo "Results: $PASSED/$TOTAL passed, $FAILED failed"
 echo "========================================="

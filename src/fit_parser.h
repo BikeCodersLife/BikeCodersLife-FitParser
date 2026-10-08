@@ -11,19 +11,24 @@
  * Coordinate structure representing a GPS point
  */
 struct Coordinate {
-    double lat;
-    double lon;
-    double elevation;
-    uint32_t timestamp;
+    // Every field carries a default: a Coordinate built field-by-field (the
+    // GPX/TCX path in main.cpp) must never emit stack garbage. v2.3.0 and
+    // older left the sensor fields + has* flags uninitialised there, so every
+    // GPX/TCX ride came out with one random power/cadence value on every
+    // point (e.g. 59820 W / 176 rpm).
+    double lat = 0.0;
+    double lon = 0.0;
+    double elevation = 0.0;
+    uint32_t timestamp = 0;
     double speed = 0.0;       // km/h, computed from GPS
-    uint8_t heartRate;
-    uint16_t power;
-    uint8_t cadence;
-    int8_t temperature;
-    bool hasHeartRate;
-    bool hasPower;
-    bool hasCadence;
-    bool hasTemperature;
+    uint8_t heartRate = 0;
+    uint16_t power = 0;
+    uint8_t cadence = 0;
+    int8_t temperature = 0;
+    bool hasHeartRate = false;
+    bool hasPower = false;
+    bool hasCadence = false;
+    bool hasTemperature = false;
     bool hasSpeed = false;
     /** False when GPS has been stripped for privacy (start/end trim zone). */
     bool gpsValid = true;
@@ -46,31 +51,33 @@ struct Coordinate {
  */
 struct RideStatistic {
     std::vector<Coordinate> coordinates;
-    double distanceKm;
-    double durationMin;
-    uint32_t startTime;
-    uint32_t endTime;
+    double distanceKm = 0.0;
+    double durationMin = 0.0;
+    uint32_t startTime = 0;
+    uint32_t endTime = 0;
 
     // Health Stats
-    double avgHeartRate;
-    double maxHeartRate;
-    double avgPower;
-    double maxPower;
-    double normalizedPower;// Coggan NP: 30s rolling-mean power^4 mean, 4th root (coasting = 0 W)
-    double avgCadence;
-    double maxCadence;
-    double avgSpeed;        // km/h, moving speed (excludes stops)
-    double maxSpeed;        // km/h, raw single-sample peak (spike-prone)
-    double smoothedMaxSpeed;// km/h, spike-resistant peak (5-sample rolling mean)
-    double movingTimeSec;   // seconds where speed > threshold
-    double coastingTimeSec; // seconds moving but not pedalling (freewheel)
-    double coastingDistanceKm;// distance covered while coasting
-    double coastingPct;     // coastingTimeSec as % of moving time
+    double avgHeartRate = 0.0;
+    double maxHeartRate = 0.0;
+    double avgPower = 0.0;
+    double maxPower = 0.0;
+    double normalizedPower = 0.0; // Coggan NP: 30s rolling-mean power^4 mean, 4th root (coasting = 0 W)
+    double avgCadence = 0.0;
+    double maxCadence = 0.0;
+    double avgSpeed = 0.0;        // km/h, moving speed (excludes stops)
+    double maxSpeed = 0.0;        // km/h, raw single-sample peak (spike-prone)
+    double smoothedMaxSpeed = 0.0; // km/h, spike-resistant peak (5-sample rolling mean)
+    double movingTimeSec = 0.0;   // seconds where speed > threshold
+    double coastingTimeSec = 0.0; // seconds moving but not pedalling (freewheel)
+    double coastingDistanceKm = 0.0; // distance covered while coasting
+    double coastingPct = 0.0;     // coastingTimeSec as % of moving time
 
-    // Data availability flags
-    bool hasHeartRateData;
-    bool hasPowerData;
-    bool hasCadenceData;
+    // Data availability flags. Defaults matter: the GPX/TCX path used to
+    // leave these uninitialised, so the summary emitted avg/max health stats
+    // for files that carry no such sensor at all.
+    bool hasHeartRateData = false;
+    bool hasPowerData = false;
+    bool hasCadenceData = false;
 
     // FIT session-message totals (#156).
     bool hasSessionDistance = false;
@@ -116,6 +123,21 @@ struct RideStatistic {
     // 2026-07-26). Empty for files without device_info (Strava exports, Zwift).
     std::vector<DeviceInfoRecord> deviceInfos;
 };
+
+/**
+ * Derive the record-stream statistics from `stats.coordinates`: per-point
+ * GPS speed, avg / max / smoothed-max speed, moving time, coasting, the
+ * heart-rate / power / cadence aggregates and Normalized Power. Also sets
+ * startTime / endTime / durationMin / distanceKm (Haversine sum over the
+ * GPS-valid segments).
+ *
+ * Shared by the FIT path (FitParser::extractCoordinates) and the GPX/TCX
+ * path (activityToRideStatistic in main.cpp) so a GPX parsed directly
+ * reports the same summary as the same GPX converted to FIT first.
+ * Callers that carry their own totals (the GPX/TCX parsers) overwrite the
+ * distance / duration / time fields afterwards.
+ */
+void computeStreamStatistics(RideStatistic& stats);
 
 /**
  * FIT file parser using Garmin FIT SDK

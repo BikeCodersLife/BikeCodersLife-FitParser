@@ -196,6 +196,11 @@ ParsedActivity GpxParser::parse() {
                     // <power> directly in extensions (common with power meters)
                     pugi::xml_node powerNode = extensions.child("power");
                     if (!powerNode) powerNode = extensions.child("gpxtpx:power");
+                    // Some exporters (Wahoo ELEMNT) nest it inside the
+                    // TrackPointExtension next to hr / cad instead.
+                    if (!powerNode && tpExt) powerNode = tpExt.child("gpxtpx:power");
+                    if (!powerNode && tpExt) powerNode = tpExt.child("power");
+                    if (!powerNode && tpExt) powerNode = tpExt.child("ns3:power");
                     if (powerNode) {
                         int pwr = powerNode.text().as_int(0);
                         if (pwr > 0 && pwr <= 65535) {

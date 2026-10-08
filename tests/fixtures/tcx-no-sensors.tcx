@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- TCX GPS only, no sensors (fit-parser v2.3.1 GPX/TCX sensor-field regression fixture) -->
+<TrainingCenterDatabase xmlns="http://www.garmin.com/xmlschemas/TrainingCenterDatabase/v2"
+    xmlns:ns3="http://www.garmin.com/xmlschemas/ActivityExtension/v2">
+  <Activities>
+    <Activity Sport="Biking">
+      <Id>2025-06-15T06:30:00Z</Id>
+      <Lap StartTime="2025-06-15T06:30:00Z">
+        <TotalTimeSeconds>240</TotalTimeSeconds>
+        <Track>
+          <Trackpoint>
+            <Time>2025-06-15T06:30:00Z</Time>
+            <Position><LatitudeDegrees>52.6420</LatitudeDegrees><LongitudeDegrees>5.0610</LongitudeDegrees></Position>
+            <AltitudeMeters>2.0</AltitudeMeters>
+          </Trackpoint>
+          <Trackpoint>
+            <Time>2025-06-15T06:30:15Z</Time>
+            <Position><LatitudeDegrees>52.6425</LatitudeDegrees><LongitudeDegrees>5.0615</LongitudeDegrees></Position>
+            <AltitudeMeters>2.0</AltitudeMeters>
+          </Trackpoint>
+          <Trackpoint>
+            <Time>2025-06-15T06:30:30Z</Time>
+            <Position><LatitudeDegrees>52.6435</LatitudeDegrees><LongitudeDegrees>5.0625</LongitudeDegrees></Position>
+            <AltitudeMeters>3.0</AltitudeMeters>
+          </Trackpoint>
+          <Trackpoint>
+            <Time>2025-06-15T06:31:00Z</Time>
+            <Position><LatitudeDegrees>52.6450</LatitudeDegrees><LongitudeDegrees>5.0640</LongitudeDegrees></Position>
+            <AltitudeMeters>3.0</AltitudeMeters>
+          </Trackpoint>
+          <Trackpoint>
+            <Time>2025-06-15T06:31:30Z</Time>
+            <Position><LatitudeDegrees>52.6470</LatitudeDegrees><LongitudeDegrees>5.0660</LongitudeDegrees></Position>
+            <AltitudeMeters>4.0</AltitudeMeters>
+          </Trackpoint>
+          <Trackpoint>
+            <Time>2025-06-15T06:32:00Z</Time>
+            <Position><LatitudeDegrees>52.6490</LatitudeDegrees><LongitudeDegrees>5.0680</LongitudeDegrees></Position>
+            <AltitudeMeters>5.0</AltitudeMeters>
+          </Trackpoint>
+          <Trackpoint>
+            <Time>2025-06-15T06:32:30Z</Time>
+            <Position><LatitudeDegrees>52.6510</LatitudeDegrees><LongitudeDegrees>5.0700</LongitudeDegrees></Position>
+            <AltitudeMeters>4.0</AltitudeMeters>
+          </Trackpoint>
+          <Trackpoint>
+            <Time>2025-06-15T06:33:00Z</Time>
+            <Position><LatitudeDegrees>52.6530</LatitudeDegrees><LongitudeDegrees>5.0720</LongitudeDegrees></Position>
+            <AltitudeMeters>3.0</AltitudeMeters>
+          </Trackpoint>
+          <Trackpoint>
+            <Time>2025-06-15T06:33:30Z</Time>
+            <Position><LatitudeDegrees>52.6545</LatitudeDegrees><LongitudeDegrees>5.0735</LongitudeDegrees></Position>
+            <AltitudeMeters>2.0</AltitudeMeters>
+          </Trackpoint>
+          <Trackpoint>
+            <Time>2025-06-15T06:34:00Z</Time>
+            <Position><LatitudeDegrees>52.6555</LatitudeDegrees><LongitudeDegrees>5.0745</LongitudeDegrees></Position>
+            <AltitudeMeters>2.0</AltitudeMeters>
+          </Trackpoint>
+        </Track>
+      </Lap>
+    </Activity>
+  </Activities>
+</TrainingCenterDatabase>

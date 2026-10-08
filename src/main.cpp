@@ -62,9 +62,10 @@ void printUsage(const char* programName) {
  * Print version information
  */
 void printVersion() {
-    std::cout << "BikeCodersLife FIT Parser v2.3.0" << std::endl;
+    std::cout << "BikeCodersLife FIT Parser v2.3.1" << std::endl;
     std::cout << "Built with Garmin FIT SDK + pugixml" << std::endl;
     std::cout << "Supports: FIT, GPX, TCX input | FIT, JSON output" << std::endl;
+    std::cout << "v2.3.1: GPX/TCX JSON no longer emits uninitialised power/cadence/heartRate on every point; copies the real HR/power/cadence/temperature/speed from the file; GPX/TCX summary uses the same stream-stats pass as FIT; GPX power inside TrackPointExtension is read" << std::endl;
     std::cout << "v2.3.0: emit Session.start_time + FileId.serial_number/time_created (cross-provider ride identity)" << std::endl;
     std::cout << "v2.2.0: decode device_info (per-sensor identity + battery voltage/status/level) into a top-level devices[] JSON array; GPS strip passes device_info through so archived rides keep battery telemetry (battery two-track design 2026-07-26)" << std::endl;
     std::cout << "v2.1.6: smoothedMaxSpeedKmh uses a rolling MEDIAN (was mean — a single GPS jump inflated it to 500+ km/h); de-spike GPS fixes that don't fit the line between neighbours (drops the pre-lock (0,0) fix that otherwise stretches the route to null-island)" << std::endl;
@@ -177,15 +178,46 @@ RideStatistic activityToRideStatistic(const ParsedActivity& activity) {
         stats.sessionMovingSec = activity.durationSec;
     }
 
-    // Convert TrackPoints to Coordinates
+    // Convert TrackPoints to Coordinates, sensor fields included. Up to
+    // v2.3.0 only position/elevation/time were copied and the rest of the
+    // Coordinate was left uninitialised, so every GPX/TCX ride emitted one
+    // garbage power/cadence/heartRate value on every point while the real
+    // sensor streams the readers had parsed were dropped.
+    stats.coordinates.reserve(activity.points.size());
     for (const auto& pt : activity.points) {
         Coordinate coord;
         coord.lat = pt.lat;
         coord.lon = pt.lon;
+        coord.gpsValid = pt.hasPosition;
         coord.elevation = pt.elevation;
         coord.timestamp = pt.timestamp;
+        coord.heartRate = pt.heart_rate;
+        coord.hasHeartRate = pt.hasHeartRate;
+        coord.power = pt.power;
+        coord.hasPower = pt.hasPower;
+        coord.cadence = pt.cadence;
+        coord.hasCadence = pt.hasCadence;
+        coord.temperature = pt.temperature;
+        coord.hasTemperature = pt.hasTemperature;
+        // TrackPoint.speed is m/s (FIT-native); Coordinate.speed is km/h.
+        coord.speed = static_cast<double>(pt.speed) * 3.6;
+        coord.hasSpeed = pt.hasSpeed;
         stats.coordinates.push_back(coord);
     }
+
+    // Same record-stream summary as the FIT path (speed, moving time,
+    // coasting, HR / power / cadence aggregates, NP), so a GPX parsed
+    // directly reports what the same GPX converted to FIT reports. The
+    // GPX/TCX readers already summed distance / duration over the full
+    // track (TCX may carry the device's own DistanceMeters), so their
+    // totals set above win over the pass's Haversine recomputation.
+    const double parsedDistanceKm = stats.distanceKm;
+    const double parsedDurationMin = stats.durationMin;
+    computeStreamStatistics(stats);
+    stats.distanceKm = parsedDistanceKm;
+    stats.durationMin = parsedDurationMin;
+    stats.startTime = activity.startTime;
+    stats.endTime = activity.endTime;
 
     return stats;
 }

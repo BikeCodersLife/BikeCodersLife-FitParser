@@ -270,188 +270,30 @@ public:
 
 FitParser::FitParser(const std::string& filename) : filename_(filename) {}
 
-RideStatistic FitParser::extractCoordinates() {
-    // Open FIT file
-    std::fstream file(filename_, std::ios::in | std::ios::binary);
-    if (!file.is_open()) {
-        throw std::runtime_error("Cannot open file: " + filename_);
-    }
-    
-    // Create FIT decoder
-    fit::Decode decode;
-    CoordinateListener listener;
-    
-    // Decode FIT file - SDK 21.158 API uses references
-    if (!decode.Read(file, listener)) {
-        file.close();
-        throw std::runtime_error("Failed to decode FIT file");
-    }
-    
-    file.close();
+/**
+ * Haversine distance in meters (mean Earth radius 6371003 m).
+ */
+static double haversineMeters(double lat1, double lon1, double lat2, double lon2) {
+    const double earthRadius = 6371003.0; // Mean Earth Radius in meters
+    const double degToRad = M_PI / 180.0;
 
-    RideStatistic stats;
-    stats.coordinates = listener.coordinates;
-    stats.deviceInfos = listener.deviceInfos;
-    stats.distanceKm = 0.0;
-    stats.durationMin = 0.0;
-    stats.startTime = 0;
-    stats.endTime = 0;
+    double dLat = (lat2 - lat1) * degToRad;
+    double dLon = (lon2 - lon1) * degToRad;
 
-    // Initialize health stats
-    stats.avgHeartRate = 0;
-    stats.maxHeartRate = 0;
-    stats.avgPower = 0;
-    stats.maxPower = 0;
-    stats.normalizedPower = 0;
-    stats.avgCadence = 0;
-    stats.maxCadence = 0;
-    stats.avgSpeed = 0;
-    stats.maxSpeed = 0;
-    stats.smoothedMaxSpeed = 0;
-    stats.coastingTimeSec = 0;
-    stats.coastingDistanceKm = 0;
-    stats.coastingPct = 0;
-    stats.movingTimeSec = 0;
-    stats.hasHeartRateData = false;
-    stats.hasPowerData = false;
-    stats.hasCadenceData = false;
+    double a = std::sin(dLat / 2) * std::sin(dLat / 2) +
+               std::cos(lat1 * degToRad) * std::cos(lat2 * degToRad) *
+               std::sin(dLon / 2) * std::sin(dLon / 2);
 
-    // Roadmap #156: copy session totals through to the result. PHP
-    // prefers these over the Haversine sum below when present.
-    if (listener.session.hasDistance) {
-        stats.hasSessionDistance = true;
-        stats.sessionDistanceKm = std::round((listener.session.distanceM / 1000.0) * 100.0) / 100.0;
-    }
-    if (listener.session.hasAscent) {
-        stats.hasSessionAscent = true;
-        stats.sessionElevationGainM = listener.session.ascentM;
-    }
-    if (listener.session.hasDescent) {
-        stats.hasSessionDescent = true;
-        stats.sessionElevationLossM = listener.session.descentM;
-    }
-    if (listener.session.hasMaxSpeed) {
-        stats.hasSessionMaxSpeed = true;
-        stats.sessionMaxSpeedKmh = std::round((listener.session.maxSpeedMs * 3.6) * 10.0) / 10.0;
-    }
-    if (listener.session.hasAvgSpeed) {
-        stats.hasSessionAvgSpeed = true;
-        stats.sessionAvgSpeedKmh = std::round((listener.session.avgSpeedMs * 3.6) * 10.0) / 10.0;
-    }
-    if (listener.session.hasElapsed) {
-        stats.hasSessionElapsed = true;
-        stats.sessionElapsedSec = listener.session.elapsedSec;
-    }
-    if (listener.session.hasMoving) {
-        stats.hasSessionMoving = true;
-        stats.sessionMovingSec = listener.session.movingSec;
-    }
+    double c = 2 * std::atan2(std::sqrt(a), std::sqrt(1 - a));
 
-    // Indoor / source-app metadata captured from the FileId + Session
-    // messages, with isIndoor derived from the most reliable signals only:
-    //   - sub_sport == INDOOR_CYCLING (6) or VIRTUAL_ACTIVITY (58)
-    //   - manufacturer == ZWIFT (260) / ZWIFT_BYTE (144) / MYWHOOSH (331)
-    //     / BKOOL (67) — apps that ship *only* indoor experiences
-    // Tacx is intentionally NOT in the manufacturer auto-flag list because
-    // the same vendor id appears on Tacx outdoor head units; a Tacx file
-    // still flags indoor when its sub_sport says so.
-    if (listener.fileId.hasManufacturer) {
-        stats.hasManufacturer = true;
-        stats.manufacturer = listener.fileId.manufacturer;
-    }
-    if (listener.fileId.hasGarminProduct) {
-        stats.hasGarminProduct = true;
-        stats.garminProduct = listener.fileId.garminProduct;
-    }
-    if (listener.fileId.hasProductName) {
-        stats.hasProductName = true;
-        stats.productName = listener.fileId.productName;
-    }
-    if (listener.fileId.hasSerialNumber) {
-        stats.hasFileIdSerialNumber = true;
-        stats.fileIdSerialNumber = listener.fileId.serialNumber;
-    }
-    if (listener.fileId.hasTimeCreated) {
-        stats.hasFileIdTimeCreated = true;
-        stats.fileIdTimeCreated = listener.fileId.timeCreated;
-    }
-    if (listener.session.hasStartTime) {
-        stats.hasSessionStartTime = true;
-        stats.sessionStartTime = listener.session.startTime;
-    }
-    if (listener.session.hasSport) {
-        stats.hasSport = true;
-        stats.sport = listener.session.sport;
-    }
-    if (listener.session.hasSubSport) {
-        stats.hasSubSport = true;
-        stats.subSport = listener.session.subSport;
-    }
+    return earthRadius * c;
+}
 
-    if (stats.hasSubSport
-        && (stats.subSport == FIT_SUB_SPORT_INDOOR_CYCLING
-            || stats.subSport == FIT_SUB_SPORT_VIRTUAL_ACTIVITY)) {
-        stats.isIndoor = true;
-    }
-    if (!stats.isIndoor && stats.hasManufacturer) {
-        switch (stats.manufacturer) {
-            case FIT_MANUFACTURER_ZWIFT:
-            case FIT_MANUFACTURER_ZWIFT_BYTE:
-            case FIT_MANUFACTURER_MYWHOOSH:
-            case FIT_MANUFACTURER_BKOOL:
-                stats.isIndoor = true;
-                break;
-            default:
-                break;
-        }
-    }
-
+void computeStreamStatistics(RideStatistic& stats) {
     if (stats.coordinates.empty()) {
-        return stats;
+        return;
     }
 
-    // GPS de-spike: drop fixes that don't fit the line between their
-    // neighbours — a pre-GPS-lock (0,0) leading fix, or an isolated point only
-    // reachable at an impossible speed from BOTH sides. A point that merely
-    // follows a signal gap (far from the previous fix but continuing normally
-    // to the next) is a real location and kept. Runs BEFORE the
-    // distance/speed/geometry pass so every derived stat (and the coordinate
-    // stream every consumer reads) uses the cleaned track. Without this, one
-    // (0,0) fix makes the route line span from null-island to the real ride.
-    if (stats.coordinates.size() >= 3) {
-        const double glitchKmh = 120.0; // impossible between adjacent fixes for cycling
-        auto segKmh = [this](const Coordinate& a, const Coordinate& b) -> double {
-            if (b.timestamp <= a.timestamp) return 0.0; // no elapsed time → can't judge
-            const double meters = calculateDistance(a.lat, a.lon, b.lat, b.lon);
-            return (meters / 1000.0) / ((b.timestamp - a.timestamp) / 3600.0);
-        };
-        const std::vector<Coordinate> cs = stats.coordinates;
-        std::vector<Coordinate> kept;
-        kept.reserve(cs.size());
-        for (size_t i = 0; i < cs.size(); ++i) {
-            const bool hasPrev = i > 0;
-            const bool hasNext = i + 1 < cs.size();
-            const double sIn = hasPrev ? segKmh(cs[i - 1], cs[i]) : 0.0;
-            const double sOut = hasNext ? segKmh(cs[i], cs[i + 1]) : 0.0;
-            bool spike = false;
-            if (hasPrev && hasNext) {
-                spike = (sIn > glitchKmh && sOut > glitchKmh); // isolated interior
-            } else if (!hasPrev) {
-                spike = (sOut > glitchKmh);                    // leading (pre-lock 0,0)
-            } else {
-                spike = (sIn > glitchKmh);                     // trailing
-            }
-            if (!spike) {
-                kept.push_back(cs[i]);
-            }
-        }
-        stats.coordinates = kept;
-        if (stats.coordinates.empty()) {
-            return stats;
-        }
-    }
-
-    // Calculate stats
     double totalDistanceMeters = 0.0;
     stats.startTime = stats.coordinates.front().timestamp;
     stats.endTime = stats.coordinates.back().timestamp;
@@ -493,7 +335,7 @@ RideStatistic FitParser::extractCoordinates() {
         // either inflate total distance or zero it out.
         if (i > 0 && point.gpsValid && stats.coordinates[i-1].gpsValid) {
             const auto& prev = stats.coordinates[i-1];
-            double segmentMeters = calculateDistance(prev.lat, prev.lon, point.lat, point.lon);
+            double segmentMeters = haversineMeters(prev.lat, prev.lon, point.lat, point.lon);
             totalDistanceMeters += segmentMeters;
 
             // Compute GPS-derived speed (km/h) from consecutive points
@@ -709,22 +551,171 @@ RideStatistic FitParser::extractCoordinates() {
     }
     if (countCadence > 0) stats.avgCadence = totalCadence / countCadence;
     if (countMovingSpeed > 0) stats.avgSpeed = std::round((totalMovingSpeed / countMovingSpeed) * 10.0) / 10.0;
+}
+
+RideStatistic FitParser::extractCoordinates() {
+    // Open FIT file
+    std::fstream file(filename_, std::ios::in | std::ios::binary);
+    if (!file.is_open()) {
+        throw std::runtime_error("Cannot open file: " + filename_);
+    }
+    
+    // Create FIT decoder
+    fit::Decode decode;
+    CoordinateListener listener;
+    
+    // Decode FIT file - SDK 21.158 API uses references
+    if (!decode.Read(file, listener)) {
+        file.close();
+        throw std::runtime_error("Failed to decode FIT file");
+    }
+    
+    file.close();
+
+    RideStatistic stats;
+    stats.coordinates = listener.coordinates;
+    stats.deviceInfos = listener.deviceInfos;
+
+    // Roadmap #156: copy session totals through to the result. PHP
+    // prefers these over the Haversine sum below when present.
+    if (listener.session.hasDistance) {
+        stats.hasSessionDistance = true;
+        stats.sessionDistanceKm = std::round((listener.session.distanceM / 1000.0) * 100.0) / 100.0;
+    }
+    if (listener.session.hasAscent) {
+        stats.hasSessionAscent = true;
+        stats.sessionElevationGainM = listener.session.ascentM;
+    }
+    if (listener.session.hasDescent) {
+        stats.hasSessionDescent = true;
+        stats.sessionElevationLossM = listener.session.descentM;
+    }
+    if (listener.session.hasMaxSpeed) {
+        stats.hasSessionMaxSpeed = true;
+        stats.sessionMaxSpeedKmh = std::round((listener.session.maxSpeedMs * 3.6) * 10.0) / 10.0;
+    }
+    if (listener.session.hasAvgSpeed) {
+        stats.hasSessionAvgSpeed = true;
+        stats.sessionAvgSpeedKmh = std::round((listener.session.avgSpeedMs * 3.6) * 10.0) / 10.0;
+    }
+    if (listener.session.hasElapsed) {
+        stats.hasSessionElapsed = true;
+        stats.sessionElapsedSec = listener.session.elapsedSec;
+    }
+    if (listener.session.hasMoving) {
+        stats.hasSessionMoving = true;
+        stats.sessionMovingSec = listener.session.movingSec;
+    }
+
+    // Indoor / source-app metadata captured from the FileId + Session
+    // messages, with isIndoor derived from the most reliable signals only:
+    //   - sub_sport == INDOOR_CYCLING (6) or VIRTUAL_ACTIVITY (58)
+    //   - manufacturer == ZWIFT (260) / ZWIFT_BYTE (144) / MYWHOOSH (331)
+    //     / BKOOL (67) — apps that ship *only* indoor experiences
+    // Tacx is intentionally NOT in the manufacturer auto-flag list because
+    // the same vendor id appears on Tacx outdoor head units; a Tacx file
+    // still flags indoor when its sub_sport says so.
+    if (listener.fileId.hasManufacturer) {
+        stats.hasManufacturer = true;
+        stats.manufacturer = listener.fileId.manufacturer;
+    }
+    if (listener.fileId.hasGarminProduct) {
+        stats.hasGarminProduct = true;
+        stats.garminProduct = listener.fileId.garminProduct;
+    }
+    if (listener.fileId.hasProductName) {
+        stats.hasProductName = true;
+        stats.productName = listener.fileId.productName;
+    }
+    if (listener.fileId.hasSerialNumber) {
+        stats.hasFileIdSerialNumber = true;
+        stats.fileIdSerialNumber = listener.fileId.serialNumber;
+    }
+    if (listener.fileId.hasTimeCreated) {
+        stats.hasFileIdTimeCreated = true;
+        stats.fileIdTimeCreated = listener.fileId.timeCreated;
+    }
+    if (listener.session.hasStartTime) {
+        stats.hasSessionStartTime = true;
+        stats.sessionStartTime = listener.session.startTime;
+    }
+    if (listener.session.hasSport) {
+        stats.hasSport = true;
+        stats.sport = listener.session.sport;
+    }
+    if (listener.session.hasSubSport) {
+        stats.hasSubSport = true;
+        stats.subSport = listener.session.subSport;
+    }
+
+    if (stats.hasSubSport
+        && (stats.subSport == FIT_SUB_SPORT_INDOOR_CYCLING
+            || stats.subSport == FIT_SUB_SPORT_VIRTUAL_ACTIVITY)) {
+        stats.isIndoor = true;
+    }
+    if (!stats.isIndoor && stats.hasManufacturer) {
+        switch (stats.manufacturer) {
+            case FIT_MANUFACTURER_ZWIFT:
+            case FIT_MANUFACTURER_ZWIFT_BYTE:
+            case FIT_MANUFACTURER_MYWHOOSH:
+            case FIT_MANUFACTURER_BKOOL:
+                stats.isIndoor = true;
+                break;
+            default:
+                break;
+        }
+    }
+
+    if (stats.coordinates.empty()) {
+        return stats;
+    }
+
+    // GPS de-spike: drop fixes that don't fit the line between their
+    // neighbours — a pre-GPS-lock (0,0) leading fix, or an isolated point only
+    // reachable at an impossible speed from BOTH sides. A point that merely
+    // follows a signal gap (far from the previous fix but continuing normally
+    // to the next) is a real location and kept. Runs BEFORE the
+    // distance/speed/geometry pass so every derived stat (and the coordinate
+    // stream every consumer reads) uses the cleaned track. Without this, one
+    // (0,0) fix makes the route line span from null-island to the real ride.
+    if (stats.coordinates.size() >= 3) {
+        const double glitchKmh = 120.0; // impossible between adjacent fixes for cycling
+        auto segKmh = [this](const Coordinate& a, const Coordinate& b) -> double {
+            if (b.timestamp <= a.timestamp) return 0.0; // no elapsed time → can't judge
+            const double meters = calculateDistance(a.lat, a.lon, b.lat, b.lon);
+            return (meters / 1000.0) / ((b.timestamp - a.timestamp) / 3600.0);
+        };
+        const std::vector<Coordinate> cs = stats.coordinates;
+        std::vector<Coordinate> kept;
+        kept.reserve(cs.size());
+        for (size_t i = 0; i < cs.size(); ++i) {
+            const bool hasPrev = i > 0;
+            const bool hasNext = i + 1 < cs.size();
+            const double sIn = hasPrev ? segKmh(cs[i - 1], cs[i]) : 0.0;
+            const double sOut = hasNext ? segKmh(cs[i], cs[i + 1]) : 0.0;
+            bool spike = false;
+            if (hasPrev && hasNext) {
+                spike = (sIn > glitchKmh && sOut > glitchKmh); // isolated interior
+            } else if (!hasPrev) {
+                spike = (sOut > glitchKmh);                    // leading (pre-lock 0,0)
+            } else {
+                spike = (sIn > glitchKmh);                     // trailing
+            }
+            if (!spike) {
+                kept.push_back(cs[i]);
+            }
+        }
+        stats.coordinates = kept;
+        if (stats.coordinates.empty()) {
+            return stats;
+        }
+    }
+
+    computeStreamStatistics(stats);
 
     return stats;
 }
 
 double FitParser::calculateDistance(double lat1, double lon1, double lat2, double lon2) {
-    const double earthRadius = 6371003.0; // Mean Earth Radius in meters
-    const double degToRad = M_PI / 180.0;
-
-    double dLat = (lat2 - lat1) * degToRad;
-    double dLon = (lon2 - lon1) * degToRad;
-
-    double a = std::sin(dLat / 2) * std::sin(dLat / 2) +
-               std::cos(lat1 * degToRad) * std::cos(lat2 * degToRad) *
-               std::sin(dLon / 2) * std::sin(dLon / 2);
-
-    double c = 2 * std::atan2(std::sqrt(a), std::sqrt(1 - a));
-
-    return earthRadius * c;
+    return haversineMeters(lat1, lon1, lat2, lon2);
 }

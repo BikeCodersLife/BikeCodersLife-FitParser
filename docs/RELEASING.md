@@ -10,7 +10,7 @@ fails. Work through this list top to bottom for every release.
 - [ ] `CMakeLists.txt` — `project(fit-parser VERSION x.y.z ...)` (this one was
       forgotten for all of v2.1.x — hence this file)
 - [ ] `tests/generate_expected.sh` if the JSON output changed, then
-      `tests/run_tests.sh` → 68/68
+      `tests/run_tests.sh` → 74/74
 - [ ] Commit, then push + tag (push main first, tag second):
 
 ```bash
