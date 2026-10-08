@@ -5,7 +5,7 @@
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PARSER="${SCRIPT_DIR}/../build/fit-parser"
+PARSER="${PARSER:-${SCRIPT_DIR}/../build/fit-parser}"
 FIXTURES_DIR="${SCRIPT_DIR}/fixtures"
 EXPECTED_DIR="${SCRIPT_DIR}/expected"
 

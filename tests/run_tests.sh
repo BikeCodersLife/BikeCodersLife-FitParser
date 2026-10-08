@@ -5,7 +5,9 @@
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PARSER="${SCRIPT_DIR}/../build/fit-parser"
+# Override with PARSER=/path/to/fit-parser to test a build made elsewhere
+# (dev containers bind-mount build/fit-parser, so a rebuild there breaks them).
+PARSER="${PARSER:-${SCRIPT_DIR}/../build/fit-parser}"
 FIXTURES_DIR="${SCRIPT_DIR}/fixtures"
 EXPECTED_DIR="${SCRIPT_DIR}/expected"
 TMP_DIR=$(mktemp -d)
