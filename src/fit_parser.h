@@ -66,7 +66,7 @@ struct RideStatistic {
     double maxCadence = 0.0;
     double avgSpeed = 0.0;        // km/h, moving speed (excludes stops)
     double maxSpeed = 0.0;        // km/h, raw single-sample peak (spike-prone)
-    double smoothedMaxSpeed = 0.0; // km/h, spike-resistant peak (5-sample rolling mean)
+    double smoothedMaxSpeed = 0.0; // km/h, spike-resistant sustained peak (see computeStreamStatistics)
     double movingTimeSec = 0.0;   // seconds where speed > threshold
     double coastingTimeSec = 0.0; // seconds moving but not pedalling (freewheel)
     double coastingDistanceKm = 0.0; // distance covered while coasting
@@ -138,6 +138,26 @@ struct RideStatistic {
  * distance / duration / time fields afterwards.
  */
 void computeStreamStatistics(RideStatistic& stats);
+
+/**
+ * Haversine distance in metres (mean Earth radius 6371003 m). The same
+ * formula the GPX/TCX readers use for their distance totals.
+ */
+double haversineMeters(double lat1, double lon1, double lat2, double lon2);
+
+/**
+ * GPS de-spike: which fixes to keep (true) and which are position glitches
+ * (false). A fix is dropped when it is only reachable at an impossible
+ * speed (> 120 km/h) from BOTH neighbours (an isolated teleport), or when
+ * it is the first / last fix and the single segment to its neighbour is
+ * impossible (the pre-lock (0,0) fix). A fix that merely follows a signal
+ * gap (far from the previous fix but continuing normally to the next) is
+ * a real location and kept.
+ *
+ * Shared by the FIT path and (since v2.3.2) the GPX/TCX path, so the same
+ * file reports the same track in every format. Fewer than 3 fixes: all kept.
+ */
+std::vector<bool> gpsDespikeKeepMask(const std::vector<Coordinate>& coordinates);
 
 /**
  * FIT file parser using Garmin FIT SDK

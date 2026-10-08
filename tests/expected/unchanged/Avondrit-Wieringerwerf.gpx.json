@@ -1,0 +1,24 @@
+{
+  "coordinates": [
+    {"lat": 52.642500, "lon": 5.059700, "elevation": 1.0, "speed": 57.7, "timestamp": "2024-06-15T18:00:00Z"},
+    {"lat": 52.770000, "lon": 5.100000, "elevation": 2.0, "speed": 57.7, "timestamp": "2024-06-15T18:15:00Z"},
+    {"lat": 52.850000, "lon": 5.050000, "elevation": 1.5, "speed": 38.0, "timestamp": "2024-06-15T18:30:00Z"}
+  ],
+  "summary": {
+    "points": 3,
+    "distanceKm": 23.94,
+    "durationMin": 30.00,
+    "avgSpeed": 47.9,
+    "maxSpeed": 57.7,
+    "smoothedMaxSpeedKmh": 57.7,
+    "movingTimeSec": 1800,
+    "sessionDistanceKm": 23.94,
+    "sessionElevationGainM": 1.0,
+    "sessionElevationLossM": 0.5,
+    "sessionElapsedSec": 1800,
+    "sessionMovingSec": 1800,
+    "isIndoor": false,
+    "startTime": "2024-06-15T18:00:00Z",
+    "endTime": "2024-06-15T18:30:00Z"
+  }
+}

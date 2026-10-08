@@ -62,9 +62,10 @@ void printUsage(const char* programName) {
  * Print version information
  */
 void printVersion() {
-    std::cout << "BikeCodersLife FIT Parser v2.3.1" << std::endl;
+    std::cout << "BikeCodersLife FIT Parser v2.3.2" << std::endl;
     std::cout << "Built with Garmin FIT SDK + pugixml" << std::endl;
     std::cout << "Supports: FIT, GPX, TCX input | FIT, JSON output" << std::endl;
+    std::cout << "v2.3.2: GPS spike filter for smoothedMaxSpeedKmh (all formats): segments > 150 km/h never count, the 7 s median window holds >= 4 samples on sparse logs, and the result never exceeds the device's own recorded max speed (FIT session, GlobalSat GPX <maxspeed>, TCX Lap MaximumSpeed); GPX/TCX get the FIT de-spike of isolated fixes (distance/ascent re-summed over the kept fixes only when one was dropped)" << std::endl;
     std::cout << "v2.3.1: GPX/TCX JSON no longer emits uninitialised power/cadence/heartRate on every point; copies the real HR/power/cadence/temperature/speed from the file; GPX/TCX summary uses the same stream-stats pass as FIT; GPX power inside TrackPointExtension is read" << std::endl;
     std::cout << "v2.3.0: emit Session.start_time + FileId.serial_number/time_created (cross-provider ride identity)" << std::endl;
     std::cout << "v2.2.0: decode device_info (per-sensor identity + battery voltage/status/level) into a top-level devices[] JSON array; GPS strip passes device_info through so archived rides keep battery telemetry (battery two-track design 2026-07-26)" << std::endl;
@@ -142,7 +143,65 @@ std::string getFileExtension(const std::string& path) {
  */
 RideStatistic activityToRideStatistic(const ParsedActivity& activity) {
     RideStatistic stats;
-    stats.distanceKm = activity.totalDistanceM / 1000.0;
+
+    // GPS de-spike (v2.3.2): the same isolated-fix rule the FIT path has
+    // applied since v2.1.6 (gpsDespikeKeepMask), so a GPX/TCX parsed
+    // directly reports the same track as the same file converted to FIT.
+    // Up to v2.3.1 the GPX/TCX path kept every fix, so one teleported point
+    // stayed in the route line, the replay and the speed series.
+    std::vector<Coordinate> allCoordinates;
+    allCoordinates.reserve(activity.points.size());
+    for (const auto& pt : activity.points) {
+        Coordinate c;
+        c.lat = pt.lat;
+        c.lon = pt.lon;
+        c.timestamp = pt.timestamp;
+        c.gpsValid = pt.hasPosition;
+        allCoordinates.push_back(c);
+    }
+    const std::vector<bool> keep = gpsDespikeKeepMask(allCoordinates);
+    std::vector<const TrackPoint*> kept;
+    kept.reserve(activity.points.size());
+    for (size_t i = 0; i < activity.points.size(); ++i) {
+        if (keep[i]) kept.push_back(&activity.points[i]);
+    }
+
+    // Reader totals. When the de-spike dropped a fix, the Haversine distance
+    // and the ascent / descent are summed again over the kept fixes, with the
+    // readers' own arithmetic: a teleported fix adds a detour that was never
+    // ridden (e.g. 234 m out and 58 m back in 2 s). When nothing was dropped
+    // (every clean ride) the reader totals are used as they are, so the
+    // output is byte-identical to v2.3.1. A TCX device distance
+    // (<DistanceMeters>, the odometer) is kept either way: a bad GPS fix
+    // does not move the odometer.
+    double totalDistanceM = activity.totalDistanceM;
+    double totalAscentM = activity.totalAscentM;
+    double totalDescentM = activity.totalDescentM;
+    if (kept.size() != activity.points.size() && !kept.empty()) {
+        double distance = 0.0;
+        double ascent = 0.0;
+        double descent = 0.0;
+        for (size_t i = 1; i < kept.size(); ++i) {
+            const TrackPoint& a = *kept[i - 1];
+            const TrackPoint& b = *kept[i];
+            distance += haversineMeters(a.lat, a.lon, b.lat, b.lon);
+            if (a.hasElevation && b.hasElevation) {
+                const double diff = b.elevation - a.elevation;
+                if (diff > 0) {
+                    ascent += diff;
+                } else {
+                    descent += (-diff);
+                }
+            }
+        }
+        if (!activity.hasDeviceDistance) {
+            totalDistanceM = distance;
+        }
+        totalAscentM = ascent;
+        totalDescentM = descent;
+    }
+
+    stats.distanceKm = totalDistanceM / 1000.0;
     stats.durationMin = activity.durationSec / 60.0;
     stats.startTime = activity.startTime;
     stats.endTime = activity.endTime;
@@ -155,17 +214,17 @@ RideStatistic activityToRideStatistic(const ParsedActivity& activity) {
     // always have distance + duration; ascent/descent are populated only
     // when the source carried an <ele> stream the parser could
     // differentiate.
-    if (activity.totalDistanceM > 0.0) {
+    if (totalDistanceM > 0.0) {
         stats.hasSessionDistance = true;
         stats.sessionDistanceKm = stats.distanceKm;
     }
-    if (activity.totalAscentM > 0.0) {
+    if (totalAscentM > 0.0) {
         stats.hasSessionAscent = true;
-        stats.sessionElevationGainM = activity.totalAscentM;
+        stats.sessionElevationGainM = totalAscentM;
     }
-    if (activity.totalDescentM > 0.0) {
+    if (totalDescentM > 0.0) {
         stats.hasSessionDescent = true;
-        stats.sessionElevationLossM = activity.totalDescentM;
+        stats.sessionElevationLossM = totalDescentM;
     }
     if (activity.durationSec > 0.0) {
         stats.hasSessionElapsed = true;
@@ -177,14 +236,22 @@ RideStatistic activityToRideStatistic(const ParsedActivity& activity) {
         stats.hasSessionMoving = true;
         stats.sessionMovingSec = activity.durationSec;
     }
+    // The device's own recorded max speed, when the file carries one
+    // (v2.3.2): emitted like a FIT session.max_speed, and the upper bound
+    // for the GPS-derived smoothed max (see computeStreamStatistics).
+    if (activity.hasDeviceMaxSpeed && activity.deviceMaxSpeedMs > 0.0) {
+        stats.hasSessionMaxSpeed = true;
+        stats.sessionMaxSpeedKmh = std::round((activity.deviceMaxSpeedMs * 3.6) * 10.0) / 10.0;
+    }
 
     // Convert TrackPoints to Coordinates, sensor fields included. Up to
     // v2.3.0 only position/elevation/time were copied and the rest of the
     // Coordinate was left uninitialised, so every GPX/TCX ride emitted one
     // garbage power/cadence/heartRate value on every point while the real
     // sensor streams the readers had parsed were dropped.
-    stats.coordinates.reserve(activity.points.size());
-    for (const auto& pt : activity.points) {
+    stats.coordinates.reserve(kept.size());
+    for (const TrackPoint* p : kept) {
+        const TrackPoint& pt = *p;
         Coordinate coord;
         coord.lat = pt.lat;
         coord.lon = pt.lon;

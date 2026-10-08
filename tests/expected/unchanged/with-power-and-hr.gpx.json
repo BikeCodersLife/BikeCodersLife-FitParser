@@ -1,0 +1,41 @@
+{
+  "coordinates": [
+    {"lat": 52.642000, "lon": 5.061000, "elevation": 2.0, "speed": 15.6, "heartRate": 72, "temperature": 14, "timestamp": "2025-06-15T06:30:00Z"},
+    {"lat": 52.642500, "lon": 5.061500, "elevation": 2.0, "speed": 15.6, "heartRate": 85, "power": 120, "cadence": 65, "temperature": 14, "timestamp": "2025-06-15T06:30:15Z"},
+    {"lat": 52.643500, "lon": 5.062500, "elevation": 3.0, "speed": 31.2, "heartRate": 110, "power": 185, "cadence": 78, "temperature": 14, "timestamp": "2025-06-15T06:30:30Z"},
+    {"lat": 52.645000, "lon": 5.064000, "elevation": 3.0, "speed": 23.4, "heartRate": 135, "power": 245, "cadence": 90, "temperature": 14, "timestamp": "2025-06-15T06:31:00Z"},
+    {"lat": 52.647000, "lon": 5.066000, "elevation": 4.0, "speed": 31.2, "heartRate": 148, "power": 280, "cadence": 92, "temperature": 15, "timestamp": "2025-06-15T06:31:30Z"},
+    {"lat": 52.649000, "lon": 5.068000, "elevation": 5.0, "speed": 31.2, "heartRate": 155, "power": 310, "cadence": 95, "temperature": 15, "timestamp": "2025-06-15T06:32:00Z"},
+    {"lat": 52.651000, "lon": 5.070000, "elevation": 4.0, "speed": 31.2, "heartRate": 160, "power": 265, "cadence": 88, "temperature": 15, "timestamp": "2025-06-15T06:32:30Z"},
+    {"lat": 52.653000, "lon": 5.072000, "elevation": 3.0, "speed": 31.2, "heartRate": 158, "power": 230, "cadence": 85, "temperature": 15, "timestamp": "2025-06-15T06:33:00Z"},
+    {"lat": 52.654500, "lon": 5.073500, "elevation": 2.0, "speed": 23.4, "heartRate": 150, "power": 195, "cadence": 80, "temperature": 15, "timestamp": "2025-06-15T06:33:30Z"},
+    {"lat": 52.655500, "lon": 5.074500, "elevation": 2.0, "speed": 15.6, "heartRate": 140, "power": 150, "cadence": 72, "temperature": 15, "timestamp": "2025-06-15T06:34:00Z"}
+  ],
+  "summary": {
+    "points": 10,
+    "distanceKm": 1.76,
+    "durationMin": 4.00,
+    "avgHeartRate": 131.3,
+    "maxHeartRate": 160.0,
+    "avgPower": 211.8,
+    "maxPower": 310.0,
+    "normalizedPower": 240.0,
+    "avgCadence": 82.8,
+    "maxCadence": 95.0,
+    "avgSpeed": 26.0,
+    "maxSpeed": 31.2,
+    "smoothedMaxSpeedKmh": 31.2,
+    "movingTimeSec": 240,
+    "coastingTimeSec": 15,
+    "coastingDistanceKm": 0.07,
+    "coastingPct": 6.3,
+    "sessionDistanceKm": 1.76,
+    "sessionElevationGainM": 3.0,
+    "sessionElevationLossM": 3.0,
+    "sessionElapsedSec": 240,
+    "sessionMovingSec": 240,
+    "isIndoor": false,
+    "startTime": "2025-06-15T06:30:00Z",
+    "endTime": "2025-06-15T06:34:00Z"
+  }
+}

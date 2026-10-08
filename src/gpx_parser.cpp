@@ -103,6 +103,21 @@ ParsedActivity GpxParser::parse() {
             }
         }
 
+        // Device-recorded max speed in the track summary (GlobalSat GS-Sport
+        // exporter: <trk><extensions><maxspeed> in m/s). Used as an upper
+        // bound for the GPS-derived max speed (see computeStreamStatistics).
+        pugi::xml_node trkExt = trk.child("extensions");
+        if (trkExt) {
+            pugi::xml_node maxSpeedNode = trkExt.child("maxspeed");
+            if (maxSpeedNode) {
+                const double ms = maxSpeedNode.text().as_double(0.0);
+                if (ms > 0.0 && std::isfinite(ms) && ms > activity.deviceMaxSpeedMs) {
+                    activity.deviceMaxSpeedMs = ms;
+                    activity.hasDeviceMaxSpeed = true;
+                }
+            }
+        }
+
         // Iterate over track segments
         for (pugi::xml_node trkseg = trk.child("trkseg"); trkseg; trkseg = trkseg.next_sibling("trkseg")) {
             // Iterate over track points

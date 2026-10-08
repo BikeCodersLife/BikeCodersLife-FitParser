@@ -231,6 +231,14 @@ void FitWriter::write(const ParsedActivity& activity, const std::string& outputP
         maxSpeed = avgSpeed; // Best estimate without per-point data
     }
 
+    // The device's own recorded max speed (GlobalSat GPX <maxspeed>, TCX Lap
+    // MaximumSpeed) is what a FIT session.max_speed means, and the parser
+    // bounds the GPS-derived max by it. Carry it over so a GPX/TCX converted
+    // to FIT reports the same max speed as the file parsed directly (v2.3.2).
+    if (activity.hasDeviceMaxSpeed && activity.deviceMaxSpeedMs > 0.0) {
+        maxSpeed = activity.deviceMaxSpeedMs;
+    }
+
     // --- Lap Message ---
     fit::LapMesg lap;
     lap.SetTimestamp(activity.endTime);

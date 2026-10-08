@@ -1,0 +1,41 @@
+{
+  "coordinates": [
+    {"lat": 52.642000, "lon": 5.061000, "elevation": 2.0, "speed": 15.6, "heartRate": 95, "timestamp": "2025-06-15T06:30:00Z"},
+    {"lat": 52.642500, "lon": 5.061500, "elevation": 2.0, "speed": 15.6, "heartRate": 104, "power": 150, "cadence": 72, "timestamp": "2025-06-15T06:30:15Z"},
+    {"lat": 52.643500, "lon": 5.062500, "elevation": 3.0, "speed": 31.2, "heartRate": 118, "power": 205, "cadence": 81, "timestamp": "2025-06-15T06:30:30Z"},
+    {"lat": 52.645000, "lon": 5.064000, "elevation": 3.0, "speed": 23.4, "heartRate": 131, "power": 240, "cadence": 88, "timestamp": "2025-06-15T06:31:00Z"},
+    {"lat": 52.647000, "lon": 5.066000, "elevation": 4.0, "speed": 31.2, "heartRate": 142, "power": 275, "cadence": 91, "timestamp": "2025-06-15T06:31:30Z"},
+    {"lat": 52.649000, "lon": 5.068000, "elevation": 5.0, "speed": 31.2, "heartRate": 151, "power": 301, "cadence": 94, "timestamp": "2025-06-15T06:32:00Z"},
+    {"lat": 52.651000, "lon": 5.070000, "elevation": 4.0, "speed": 31.2, "heartRate": 156, "power": 255, "cadence": 86, "timestamp": "2025-06-15T06:32:30Z"},
+    {"lat": 52.653000, "lon": 5.072000, "elevation": 3.0, "speed": 31.2, "heartRate": 153, "timestamp": "2025-06-15T06:33:00Z"},
+    {"lat": 52.654500, "lon": 5.073500, "elevation": 2.0, "speed": 23.4, "heartRate": 147, "power": 190, "cadence": 79, "timestamp": "2025-06-15T06:33:30Z"},
+    {"lat": 52.655500, "lon": 5.074500, "elevation": 2.0, "speed": 15.6, "heartRate": 139, "power": 140, "cadence": 70, "timestamp": "2025-06-15T06:34:00Z"}
+  ],
+  "summary": {
+    "points": 10,
+    "distanceKm": 1.76,
+    "durationMin": 4.00,
+    "avgHeartRate": 133.6,
+    "maxHeartRate": 156.0,
+    "avgPower": 185.7,
+    "maxPower": 301.0,
+    "normalizedPower": 229.5,
+    "avgCadence": 82.6,
+    "maxCadence": 94.0,
+    "avgSpeed": 26.0,
+    "maxSpeed": 31.2,
+    "smoothedMaxSpeedKmh": 31.2,
+    "movingTimeSec": 240,
+    "coastingTimeSec": 45,
+    "coastingDistanceKm": 0.26,
+    "coastingPct": 18.8,
+    "sessionDistanceKm": 1.76,
+    "sessionElevationGainM": 3.0,
+    "sessionElevationLossM": 3.0,
+    "sessionElapsedSec": 240,
+    "sessionMovingSec": 240,
+    "isIndoor": false,
+    "startTime": "2025-06-15T06:30:00Z",
+    "endTime": "2025-06-15T06:34:00Z"
+  }
+}

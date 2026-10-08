@@ -273,7 +273,7 @@ FitParser::FitParser(const std::string& filename) : filename_(filename) {}
 /**
  * Haversine distance in meters (mean Earth radius 6371003 m).
  */
-static double haversineMeters(double lat1, double lon1, double lat2, double lon2) {
+double haversineMeters(double lat1, double lon1, double lat2, double lon2) {
     const double earthRadius = 6371003.0; // Mean Earth Radius in meters
     const double degToRad = M_PI / 180.0;
 
@@ -287,6 +287,41 @@ static double haversineMeters(double lat1, double lon1, double lat2, double lon2
     double c = 2 * std::atan2(std::sqrt(a), std::sqrt(1 - a));
 
     return earthRadius * c;
+}
+
+std::vector<bool> gpsDespikeKeepMask(const std::vector<Coordinate>& cs) {
+    std::vector<bool> keep(cs.size(), true);
+    if (cs.size() < 3) {
+        return keep;
+    }
+    // Impossible between adjacent fixes for cycling. A fix is only dropped
+    // when BOTH of its segments exceed this (or its only segment, at the
+    // ends), so a real fast descent - fast on one side, and still on the
+    // road line - never qualifies.
+    const double glitchKmh = 120.0;
+    auto segKmh = [](const Coordinate& a, const Coordinate& b) -> double {
+        if (b.timestamp <= a.timestamp) return 0.0; // no elapsed time → can't judge
+        const double meters = haversineMeters(a.lat, a.lon, b.lat, b.lon);
+        return (meters / 1000.0) / ((b.timestamp - a.timestamp) / 3600.0);
+    };
+    // Judged against the ORIGINAL neighbours (not the kept ones), exactly as
+    // the FIT path did up to v2.3.1, so FIT output is unchanged.
+    for (size_t i = 0; i < cs.size(); ++i) {
+        const bool hasPrev = i > 0;
+        const bool hasNext = i + 1 < cs.size();
+        const double sIn = hasPrev ? segKmh(cs[i - 1], cs[i]) : 0.0;
+        const double sOut = hasNext ? segKmh(cs[i], cs[i + 1]) : 0.0;
+        bool spike = false;
+        if (hasPrev && hasNext) {
+            spike = (sIn > glitchKmh && sOut > glitchKmh); // isolated interior
+        } else if (!hasPrev) {
+            spike = (sOut > glitchKmh);                    // leading (pre-lock 0,0)
+        } else {
+            spike = (sIn > glitchKmh);                     // trailing
+        }
+        keep[i] = !spike;
+    }
+    return keep;
 }
 
 void computeStreamStatistics(RideStatistic& stats) {
@@ -436,8 +471,8 @@ void computeStreamStatistics(RideStatistic& stats) {
         : 0.0;
 
     // Spike-resistant max speed: the peak of a rolling MEDIAN over the
-    // per-point GPS-derived speed series. The window is TIME-based (~7 s, not a
-    // fixed sample count) so it behaves consistently across recording rates.
+    // per-point GPS-derived speed series. The window is TIME-based (>= 7 s, not
+    // a fixed sample count) so it behaves consistently across recording rates.
     //
     // A MEDIAN, not a mean: a single GPS-distance glitch (e.g. a 700 m jump in
     // 1 s = 2500 km/h) only shifts the window's median by one rank, so it's
@@ -446,10 +481,33 @@ void computeStreamStatistics(RideStatistic& stats) {
     // bogus "517 km/h max" this replaces. A sustained real descent peak (the
     // majority of the window) still survives. Consumers should prefer this
     // over maxSpeed.
+    //
+    // GPS spike filter (v2.3.2), three more rules:
+    //  1. A segment implying more than kMaxPlausibleKmh (150 km/h) never
+    //     counts. The fastest road descents in racing reach ~130 km/h; anything
+    //     faster between two fixes is a position error.
+    //  2. A window must also hold at least kMinWindowSamples (4) speed samples.
+    //     On a sparse log (one fix every 5-20 s) a 7 s window holds 1-2
+    //     samples, so ONE catch-up segment after a GPS freeze (e.g. 362 m in
+    //     11 s = 119 km/h after two near-zero samples) set the max on its own.
+    //     The window now extends back to 4 samples there. A 1 Hz log holds 8
+    //     samples in 7 s and is unaffected; a 2-3 s log (3-4 samples) can
+    //     move by a few tenths.
+    //  3. Device bound, applied after the averages below: see there.
+    // Points whose speed was not derived from GPS (no fix / no elapsed time)
+    // stay in the window with the same value as in v2.3.1.
     {
         const uint32_t windowSec = 7;
-        const auto& cs = stats.coordinates;
-        const bool haveTimes = !cs.empty() && cs.back().timestamp > cs.front().timestamp;
+        const size_t kMinWindowSamples = 4;
+        const double kMaxPlausibleKmh = 150.0;
+        const auto& all = stats.coordinates;
+        std::vector<const Coordinate*> cs;
+        cs.reserve(all.size());
+        for (const auto& c : all) {
+            if (c.hasSpeed && c.speed > kMaxPlausibleKmh) continue; // rule 1
+            cs.push_back(&c);
+        }
+        const bool haveTimes = !cs.empty() && cs.back()->timestamp > cs.front()->timestamp;
         double best = 0.0;
         auto windowMedian = [](std::vector<double>& w) -> double {
             if (w.empty()) return 0.0;
@@ -457,16 +515,25 @@ void computeStreamStatistics(RideStatistic& stats) {
             const size_t mid = w.size() / 2;
             return (w.size() % 2 == 0) ? (w[mid - 1] + w[mid]) / 2.0 : w[mid];
         };
-        if (haveTimes) {
-            // Two-pointer sliding window keeping the time span within windowSec.
+        if (haveTimes && cs.size() < kMinWindowSamples) {
+            // Too few samples for any window: the median of what there is.
+            std::vector<double> speeds;
+            for (const auto* c : cs) speeds.push_back(c->speed);
+            stats.smoothedMaxSpeed = std::round(windowMedian(speeds) * 10.0) / 10.0;
+        } else if (haveTimes) {
+            // Two-pointer sliding window: span >= windowSec AND >= kMinWindowSamples
+            // samples (rule 2). Windows with fewer samples are not judged.
             size_t start = 0;
             for (size_t end = 0; end < cs.size(); ++end) {
-                while (start < end && cs[end].timestamp - cs[start].timestamp > windowSec) {
+                while (start < end
+                    && cs[end]->timestamp - cs[start]->timestamp > windowSec
+                    && end - start + 1 > kMinWindowSamples) {
                     ++start;
                 }
+                if (end - start + 1 < kMinWindowSamples) continue;
                 std::vector<double> speeds;
                 speeds.reserve(end - start + 1);
-                for (size_t k = start; k <= end; ++k) speeds.push_back(cs[k].speed);
+                for (size_t k = start; k <= end; ++k) speeds.push_back(cs[k]->speed);
                 const double med = windowMedian(speeds);
                 if (med > best) best = med;
             }
@@ -478,7 +545,7 @@ void computeStreamStatistics(RideStatistic& stats) {
                 for (size_t i = 0; i + win <= cs.size(); ++i) {
                     std::vector<double> speeds;
                     speeds.reserve(win);
-                    for (size_t k = i; k < i + win; ++k) speeds.push_back(cs[k].speed);
+                    for (size_t k = i; k < i + win; ++k) speeds.push_back(cs[k]->speed);
                     const double med = windowMedian(speeds);
                     if (med > best) best = med;
                 }
@@ -551,6 +618,26 @@ void computeStreamStatistics(RideStatistic& stats) {
     }
     if (countCadence > 0) stats.avgCadence = totalCadence / countCadence;
     if (countMovingSpeed > 0) stats.avgSpeed = std::round((totalMovingSpeed / countMovingSpeed) * 10.0) / 10.0;
+
+    // Device bound (GPS spike filter rule 3, v2.3.2): the smoothed max is a
+    // SUSTAINED speed computed from GPS positions, so it can never honestly
+    // exceed the device's own recorded single-sample max speed (FIT
+    // session.max_speed; the GPX/TCX track summary when the file carries one,
+    // e.g. GlobalSat <maxspeed> or a TCX Lap <MaximumSpeed>). The device
+    // measures speed by Doppler or a wheel sensor, which position jumps do
+    // not affect. Evidence: GlobalSat logs lag and then catch up in bursts of
+    // 3-10 fixes (e.g. 40, 60, 72, 84, 84, 96, 171 km/h, then 24) that look
+    // like real acceleration to any per-sample rule; the device said 32.5 km/h
+    // max for that ride, the GPS median said 113.8. Ignored when the session
+    // max is not above the session average: that is a "max = avg" filler
+    // (a FIT written without per-record speed), not a measurement.
+    const bool maxIsAvgFiller = stats.hasSessionAvgSpeed
+        && stats.sessionMaxSpeedKmh <= stats.sessionAvgSpeedKmh;
+    if (stats.hasSessionMaxSpeed && stats.sessionMaxSpeedKmh > 0.0
+        && !maxIsAvgFiller
+        && stats.smoothedMaxSpeed > stats.sessionMaxSpeedKmh) {
+        stats.smoothedMaxSpeed = stats.sessionMaxSpeedKmh;
+    }
 }
 
 RideStatistic FitParser::extractCoordinates() {
@@ -670,39 +757,17 @@ RideStatistic FitParser::extractCoordinates() {
         return stats;
     }
 
-    // GPS de-spike: drop fixes that don't fit the line between their
-    // neighbours — a pre-GPS-lock (0,0) leading fix, or an isolated point only
-    // reachable at an impossible speed from BOTH sides. A point that merely
-    // follows a signal gap (far from the previous fix but continuing normally
-    // to the next) is a real location and kept. Runs BEFORE the
+    // GPS de-spike (see gpsDespikeKeepMask). Runs BEFORE the
     // distance/speed/geometry pass so every derived stat (and the coordinate
     // stream every consumer reads) uses the cleaned track. Without this, one
     // (0,0) fix makes the route line span from null-island to the real ride.
     if (stats.coordinates.size() >= 3) {
-        const double glitchKmh = 120.0; // impossible between adjacent fixes for cycling
-        auto segKmh = [this](const Coordinate& a, const Coordinate& b) -> double {
-            if (b.timestamp <= a.timestamp) return 0.0; // no elapsed time → can't judge
-            const double meters = calculateDistance(a.lat, a.lon, b.lat, b.lon);
-            return (meters / 1000.0) / ((b.timestamp - a.timestamp) / 3600.0);
-        };
-        const std::vector<Coordinate> cs = stats.coordinates;
+        const std::vector<bool> keep = gpsDespikeKeepMask(stats.coordinates);
         std::vector<Coordinate> kept;
-        kept.reserve(cs.size());
-        for (size_t i = 0; i < cs.size(); ++i) {
-            const bool hasPrev = i > 0;
-            const bool hasNext = i + 1 < cs.size();
-            const double sIn = hasPrev ? segKmh(cs[i - 1], cs[i]) : 0.0;
-            const double sOut = hasNext ? segKmh(cs[i], cs[i + 1]) : 0.0;
-            bool spike = false;
-            if (hasPrev && hasNext) {
-                spike = (sIn > glitchKmh && sOut > glitchKmh); // isolated interior
-            } else if (!hasPrev) {
-                spike = (sOut > glitchKmh);                    // leading (pre-lock 0,0)
-            } else {
-                spike = (sIn > glitchKmh);                     // trailing
-            }
-            if (!spike) {
-                kept.push_back(cs[i]);
+        kept.reserve(stats.coordinates.size());
+        for (size_t i = 0; i < stats.coordinates.size(); ++i) {
+            if (keep[i]) {
+                kept.push_back(stats.coordinates[i]);
             }
         }
         stats.coordinates = kept;

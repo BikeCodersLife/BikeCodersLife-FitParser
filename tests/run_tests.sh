@@ -146,10 +146,9 @@ fit_json = json.load(open('$TMP_DIR/fit_out.json'))
 gpx_count = len(gpx_json['coordinates'])
 fit_count = len(fit_json['coordinates'])
 
-# The converted-FIT parse runs full stats including the GPS de-spike (v2.1.6),
-# which removes isolated glitch fixes; the lighter GPX-direct path does not.
-# So the FIT may have a FEW fewer points — never more, and never a wholesale
-# loss. Allow the small de-spike delta rather than demanding exact equality.
+# Both paths run the same GPS de-spike (FIT since v2.1.6, GPX/TCX direct
+# since v2.3.2), so the counts normally match. The small tolerance (never
+# more FIT points, never a wholesale loss) stays as a safety margin.
 dropped = gpx_count - fit_count
 assert 0 <= dropped <= max(10, int(gpx_count * 0.01)), \
     f'point count mismatch beyond de-spike tolerance: GPX={gpx_count} FIT={fit_count} (dropped {dropped})'
@@ -351,6 +350,119 @@ PY
         pass "$source summary matches its FIT conversion"
     else
         fail "$source summary differs from its FIT conversion"
+    fi
+done
+
+echo ""
+echo "--- GPS spike filter (v2.3.2) ---"
+
+# Synthetic fixtures from tests/fixtures/make_gps_spike_fixtures.py (see its
+# docstring). Each check names the dev ride it reproduces.
+
+# One fix teleported 400 m sideways and back, 1 Hz. The GPX/TCX path now runs
+# the FIT de-spike: the fix is gone from the track, and the distance no longer
+# includes the 800 m detour (v2.3.1: 5.78 km instead of 5.00, raw max 1440 km/h).
+TOTAL=$((TOTAL + 1))
+if "$PARSER" "$FIXTURES_DIR/spike-teleport.gpx" 2>/dev/null > "$TMP_DIR/teleport.json" && python3 - "$FIXTURES_DIR/spike-teleport.gpx" "$TMP_DIR/teleport.json" <<'PY' 2>/dev/null
+import json, math, sys
+import xml.etree.ElementTree as ET
+pts = [(float(p.get('lat')), float(p.get('lon'))) for p in ET.parse(sys.argv[1]).getroot().iter('{http://www.topografix.com/GPX/1/1}trkpt')]
+def hav(a, b):
+    r = math.pi / 180
+    x = math.sin((b[0] - a[0]) * r / 2) ** 2 + math.cos(a[0] * r) * math.cos(b[0] * r) * math.sin((b[1] - a[1]) * r / 2) ** 2
+    return 6371003.0 * 2 * math.atan2(math.sqrt(x), math.sqrt(1 - x))
+clean = pts[:300] + pts[301:]
+want_km = round(sum(hav(clean[i - 1], clean[i]) for i in range(1, len(clean))) / 1000, 2)
+d = json.load(open(sys.argv[2])); s = d['summary']
+assert len(d['coordinates']) == len(pts) - 1, f"{len(d['coordinates'])} points, the teleported fix survived"
+assert all(abs(c['lon'] - 5.06) < 0.001 for c in d['coordinates']), 'a teleported coordinate survived'
+assert s['distanceKm'] == want_km and s['sessionDistanceKm'] == want_km, f"distance {s['distanceKm']} != {want_km}"
+assert s['maxSpeed'] < 35 and 29 <= s['smoothedMaxSpeedKmh'] <= 31, s
+PY
+then
+    pass "spike-teleport.gpx: teleported fix dropped, distance without the detour"
+else
+    fail "spike-teleport.gpx: teleported fix kept or distance includes the detour"
+fi
+
+# The TCX twin carries the device's own <DistanceMeters>: the fix is dropped,
+# and the odometer distance (5.00 km) is kept as it is.
+TOTAL=$((TOTAL + 1))
+if "$PARSER" "$FIXTURES_DIR/spike-teleport.tcx" 2>/dev/null > "$TMP_DIR/teleport-tcx.json" && python3 - "$TMP_DIR/teleport-tcx.json" <<'PY' 2>/dev/null
+import json, sys
+d = json.load(open(sys.argv[1])); s = d['summary']
+assert len(d['coordinates']) == 600, len(d['coordinates'])
+assert s['distanceKm'] == 5.0, s['distanceKm']
+assert s['maxSpeed'] < 35, s['maxSpeed']
+PY
+then
+    pass "spike-teleport.tcx: teleported fix dropped, device distance kept"
+else
+    fail "spike-teleport.tcx: teleported fix kept or device distance changed"
+fi
+
+# Sparse log (a fix every 10 s), GPS freeze then a 362 m catch-up in 11 s
+# (dev ride 1256: 118.6 km/h on v2.3.1). The 7 s window held one sample, so
+# that one segment was the max. Distance is unchanged (no fix is dropped:
+# the catch-up is ridden distance, only its timing is wrong).
+TOTAL=$((TOTAL + 1))
+if "$PARSER" "$FIXTURES_DIR/spike-sparse-catchup.gpx" 2>/dev/null > "$TMP_DIR/sparse.json" && python3 - "$TMP_DIR/sparse.json" <<'PY' 2>/dev/null
+import json, sys
+d = json.load(open(sys.argv[1])); s = d['summary']
+assert s['smoothedMaxSpeedKmh'] <= 30, f"smoothedMaxSpeedKmh {s['smoothedMaxSpeedKmh']} (a 25 km/h ride)"
+assert len(d['coordinates']) == 84 and s['distanceKm'] == 5.94, s
+PY
+then
+    pass "spike-sparse-catchup.gpx: one catch-up segment no longer sets the max"
+else
+    fail "spike-sparse-catchup.gpx: catch-up segment still sets the max"
+fi
+
+# A real fast descent (1 Hz, 10 s at 95 +- 1.5 km/h) must keep its ~95 km/h.
+TOTAL=$((TOTAL + 1))
+if "$PARSER" "$FIXTURES_DIR/fast-descent.gpx" 2>/dev/null > "$TMP_DIR/descent.json" && python3 - "$TMP_DIR/descent.json" <<'PY' 2>/dev/null
+import json, sys
+s = json.load(open(sys.argv[1]))['summary']
+assert 93 <= s['smoothedMaxSpeedKmh'] <= 97, s['smoothedMaxSpeedKmh']
+PY
+then
+    pass "fast-descent.gpx: a real 95 km/h descent survives"
+else
+    fail "fast-descent.gpx: a real descent was filtered"
+fi
+
+# GlobalSat lag-then-catch-up burst over 7 fixes (dev rides 1010 / 1117:
+# 127 / 124 km/h on v2.3.1, the device said 40 / 32.5). The file's own
+# <maxspeed> (9.0 m/s) bounds the GPS-derived max, directly and after
+# conversion to FIT.
+TOTAL=$((TOTAL + 1))
+if "$PARSER" "$FIXTURES_DIR/globalsat-catchup.gpx" 2>/dev/null > "$TMP_DIR/gs.json" \
+    && "$PARSER" "$FIXTURES_DIR/globalsat-catchup.gpx" --convert "$TMP_DIR/gs.fit" 2>/dev/null \
+    && "$PARSER" "$TMP_DIR/gs.fit" 2>/dev/null > "$TMP_DIR/gs-fit.json" \
+    && python3 - "$TMP_DIR/gs.json" "$TMP_DIR/gs-fit.json" <<'PY' 2>/dev/null
+import json, sys
+s = json.load(open(sys.argv[1]))['summary']
+f = json.load(open(sys.argv[2]))['summary']
+assert s['sessionMaxSpeedKmh'] == 32.4, s.get('sessionMaxSpeedKmh')
+assert s['smoothedMaxSpeedKmh'] <= 32.4, s['smoothedMaxSpeedKmh']
+assert f['sessionMaxSpeedKmh'] == 32.4 and f['smoothedMaxSpeedKmh'] == s['smoothedMaxSpeedKmh'], f
+PY
+then
+    pass "globalsat-catchup.gpx: device max speed bounds the GPS-derived max (GPX + FIT)"
+else
+    fail "globalsat-catchup.gpx: GPS catch-up burst still sets the max"
+fi
+
+# Clean rides: the spike filter must not change a single byte of their output.
+# Baselines are the v2.3.1 output of each file.
+for clean in fast-descent.gpx with-power-and-hr.gpx tcx-with-sensors.tcx tcx-no-sensors.tcx \
+             negative-elevation-below-sea-level.gpx Avondrit-Wieringerwerf.gpx; do
+    TOTAL=$((TOTAL + 1))
+    baseline="$EXPECTED_DIR/unchanged/$clean.json"
+    if "$PARSER" "$FIXTURES_DIR/$clean" 2>/dev/null | diff -q - "$baseline" > /dev/null 2>&1; then
+        pass "$clean output unchanged since v2.3.1"
+    else
+        fail "$clean output changed (clean ride)"
     fi
 done
 

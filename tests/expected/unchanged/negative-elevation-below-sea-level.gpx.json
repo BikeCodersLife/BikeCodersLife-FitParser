@@ -1,0 +1,36 @@
+{
+  "coordinates": [
+    {"lat": 52.518000, "lon": 5.471000, "elevation": -4.2, "speed": 36.1, "heartRate": 75, "cadence": 70, "temperature": 11, "timestamp": "2025-04-12T10:00:00Z"},
+    {"lat": 52.520000, "lon": 5.474000, "elevation": -4.5, "speed": 36.1, "heartRate": 95, "cadence": 80, "temperature": 11, "timestamp": "2025-04-12T10:00:30Z"},
+    {"lat": 52.522500, "lon": 5.478000, "elevation": -3.8, "speed": 46.6, "heartRate": 110, "cadence": 85, "temperature": 11, "timestamp": "2025-04-12T10:01:00Z"},
+    {"lat": 52.525000, "lon": 5.482000, "elevation": 2.1, "speed": 46.6, "heartRate": 135, "cadence": 75, "temperature": 12, "timestamp": "2025-04-12T10:01:30Z"},
+    {"lat": 52.527500, "lon": 5.486000, "elevation": 4.5, "speed": 46.6, "heartRate": 145, "cadence": 68, "temperature": 12, "timestamp": "2025-04-12T10:02:00Z"},
+    {"lat": 52.530000, "lon": 5.490000, "elevation": 4.8, "speed": 46.6, "heartRate": 140, "cadence": 88, "temperature": 13, "timestamp": "2025-04-12T10:02:30Z"},
+    {"lat": 52.532500, "lon": 5.494000, "elevation": -2.0, "speed": 46.6, "heartRate": 120, "cadence": 92, "temperature": 12, "timestamp": "2025-04-12T10:03:00Z"},
+    {"lat": 52.535000, "lon": 5.498000, "elevation": -5.1, "speed": 46.5, "heartRate": 110, "cadence": 85, "temperature": 11, "timestamp": "2025-04-12T10:03:30Z"}
+  ],
+  "summary": {
+    "points": 8,
+    "distanceKm": 2.63,
+    "durationMin": 3.50,
+    "avgHeartRate": 116.2,
+    "maxHeartRate": 145.0,
+    "avgCadence": 80.4,
+    "maxCadence": 92.0,
+    "avgSpeed": 45.1,
+    "maxSpeed": 46.6,
+    "smoothedMaxSpeedKmh": 46.6,
+    "movingTimeSec": 210,
+    "coastingTimeSec": 0,
+    "coastingDistanceKm": 0.00,
+    "coastingPct": 0.0,
+    "sessionDistanceKm": 2.63,
+    "sessionElevationGainM": 9.3,
+    "sessionElevationLossM": 10.2,
+    "sessionElapsedSec": 210,
+    "sessionMovingSec": 210,
+    "isIndoor": false,
+    "startTime": "2025-04-12T10:00:00Z",
+    "endTime": "2025-04-12T10:03:30Z"
+  }
+}

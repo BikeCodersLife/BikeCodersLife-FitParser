@@ -52,6 +52,16 @@ struct ParsedActivity {
     uint32_t endTime = 0;        // FIT epoch
     double durationSec = 0.0;    // Duration in seconds
 
+    // Device-recorded track summary, when the file carries one (v2.3.2).
+    // deviceMaxSpeedMs: GlobalSat GPX <trk><extensions><maxspeed>, or the
+    // highest TCX <Lap><MaximumSpeed>; m/s, measured by the device itself
+    // (Doppler / wheel sensor), so GPS position jumps do not affect it.
+    bool hasDeviceMaxSpeed = false;
+    double deviceMaxSpeedMs = 0.0;
+    // True when totalDistanceM came from the device's own cumulative
+    // distance (TCX <DistanceMeters>) rather than a Haversine sum.
+    bool hasDeviceDistance = false;
+
     // device_info pass-through (battery design 2026-07-26): the GPS stripper
     // rebuilds the FIT from this struct — without carrying these, the archived
     // ride would lose its sensor battery telemetry forever.

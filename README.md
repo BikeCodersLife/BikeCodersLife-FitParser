@@ -114,6 +114,42 @@ gps-stripper ride.fit stripped_ride.fit 2000 2000
 
 GPX extensions supported: Garmin `gpxtpx:TrackPointExtension` (v1 and v2), `ns3:` namespace variant, and unprefixed variants.
 
+## Max speed and the GPS spike filter
+
+`maxSpeed` is the raw single-sample peak of the speed derived from GPS
+positions. One bad fix sets it, so treat it as diagnostic only.
+`smoothedMaxSpeedKmh` is the value to show and store. The rules, the same for
+FIT, GPX and TCX:
+
+1. **De-spike isolated fixes.** A fix that is only reachable at more than
+   120 km/h from both neighbours (a teleport out and back), or a first / last
+   fix with an impossible segment (the pre-lock (0,0) fix), is dropped from
+   the track. FIT has done this since v2.1.6, GPX/TCX since v2.3.2. When a
+   GPX/TCX fix is dropped, the distance and ascent / descent are summed again
+   over the kept fixes. A TCX device distance (`<DistanceMeters>`) is kept.
+   A ride where nothing is dropped reports exactly the reader totals.
+2. **Hard cap.** A segment implying more than 150 km/h never counts towards
+   the max. The fastest road descents in racing reach about 130 km/h.
+3. **Sustained window.** The max is the peak of a rolling median over a window
+   of at least 7 s that holds at least 4 speed samples. A 1 Hz log holds 8
+   samples in 7 s. On a sparse log (one fix every 5-20 s) the window extends
+   to 4 samples, so one catch-up segment after a GPS freeze cannot set the
+   max on its own.
+4. **Device bound.** The result never exceeds the device's own recorded max
+   speed: FIT `session.max_speed`, the GlobalSat GPX track summary
+   `<maxspeed>`, or the highest TCX `<Lap><MaximumSpeed>`. The device measures
+   speed by Doppler or a wheel sensor, which position jumps do not affect.
+   GPX/TCX emit that value as `sessionMaxSpeedKmh`. It is ignored when it is
+   not above the session average (a "max = average" filler, not a
+   measurement).
+
+Rule 4 exists because some logs lag and then catch up over several fixes. A
+GlobalSat ride logged 40, 60, 72, 84, 84, 96, 171 km/h and then 24 km/h on a
+flat road. No per-sample rule separates that from real acceleration, but the
+device recorded 32.5 km/h as its max. A real descent keeps its speed: a 10 s
+plateau at 95 km/h reports 95.3 km/h (`tests/fixtures/fast-descent.gpx`).
+The per-point `speed` values in `coordinates` stay the raw GPS-derived values.
+
 ## Build from Source
 
 **Prerequisites:**

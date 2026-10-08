@@ -145,6 +145,9 @@ ParsedActivity TcxParser::parse() {
                     pugi::xml_node distNode = tp.child("DistanceMeters");
                     if (distNode) {
                         point.distance = distNode.text().as_double(0.0);
+                        if (point.distance > 0.0) {
+                            activity.hasDeviceDistance = true;
+                        }
                     }
 
                     // Heart rate
@@ -241,6 +244,16 @@ ParsedActivity TcxParser::parse() {
             }
             // Check if this is a Lap containing Track(s)
             else if (std::string(container.name()) == "Lap") {
+                // The device's recorded lap max speed (m/s): an upper bound for
+                // the GPS-derived max speed (see computeStreamStatistics).
+                pugi::xml_node maxSpeedNode = container.child("MaximumSpeed");
+                if (maxSpeedNode) {
+                    const double ms = maxSpeedNode.text().as_double(0.0);
+                    if (ms > 0.0 && std::isfinite(ms) && ms > activity.deviceMaxSpeedMs) {
+                        activity.deviceMaxSpeedMs = ms;
+                        activity.hasDeviceMaxSpeed = true;
+                    }
+                }
                 for (pugi::xml_node track = container.child("Track"); track; track = track.next_sibling("Track")) {
                     processTrack(track);
                 }

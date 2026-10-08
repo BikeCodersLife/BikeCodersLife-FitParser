@@ -4823,7 +4823,7 @@
     "maxCadence": 104.0,
     "avgSpeed": 27.4,
     "maxSpeed": 50.3,
-    "smoothedMaxSpeedKmh": 37.3,
+    "smoothedMaxSpeedKmh": 36.7,
     "movingTimeSec": 4757,
     "coastingTimeSec": 240,
     "coastingDistanceKm": 1.06,
