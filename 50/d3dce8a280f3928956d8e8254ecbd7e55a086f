@@ -1,0 +1,19 @@
+.github/workflows/release.yml
+  s_c75a67ba3f02f9::t_ca311d1e697a27 99
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "50d3dce8a280f3928956d8e8254ecbd7e55a086f",
+  "prompts": {},
+  "sessions": {
+    "s_c75a67ba3f02f9": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "2cad560c-d1ec-4e6a-b3c2-16160bbd336d",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "X. Koevoet <development@bikecoders.life>"
+    }
+  }
+}
