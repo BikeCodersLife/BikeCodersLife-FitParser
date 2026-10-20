@@ -62,9 +62,10 @@ void printUsage(const char* programName) {
  * Print version information
  */
 void printVersion() {
-    std::cout << "BikeCodersLife FIT Parser v2.3.2" << std::endl;
+    std::cout << "BikeCodersLife FIT Parser v2.3.3" << std::endl;
     std::cout << "Built with Garmin FIT SDK + pugixml" << std::endl;
     std::cout << "Supports: FIT, GPX, TCX input | FIT, JSON output" << std::endl;
+    std::cout << "v2.3.3: GPX/TCX points without position (GlobalSat lat=0 lon=0, TCX without <Position>) are kept with their time and sensors instead of dropped; a trainer ride no longer fails with \"no valid track points\"; a ride without any position takes its distance from the device (GPX <trk><extensions><length>, TCX <DistanceMeters>)" << std::endl;
     std::cout << "v2.3.2: GPS spike filter for smoothedMaxSpeedKmh (all formats): segments > 150 km/h never count, the 7 s median window holds >= 4 samples on sparse logs, and the result never exceeds the device's own recorded max speed (FIT session, GlobalSat GPX <maxspeed>, TCX Lap MaximumSpeed); GPX/TCX get the FIT de-spike of isolated fixes (distance/ascent re-summed over the kept fixes only when one was dropped)" << std::endl;
     std::cout << "v2.3.1: GPX/TCX JSON no longer emits uninitialised power/cadence/heartRate on every point; copies the real HR/power/cadence/temperature/speed from the file; GPX/TCX summary uses the same stream-stats pass as FIT; GPX power inside TrackPointExtension is read" << std::endl;
     std::cout << "v2.3.0: emit Session.start_time + FileId.serial_number/time_created (cross-provider ride identity)" << std::endl;

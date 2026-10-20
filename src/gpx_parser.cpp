@@ -88,6 +88,14 @@ ParsedActivity GpxParser::parse() {
     double totalDescent = 0.0;
     TrackPoint prevPoint;
     bool hasPrevPoint = false;
+    // Last point WITH a position: distance is only measured between two
+    // positioned points (v2.3.3). For a file where every point has one this
+    // is prevPoint, so its output is unchanged.
+    TrackPoint prevPositioned;
+    bool hasPrevPositioned = false;
+    // GlobalSat track total in metres (<trk><extensions><length>), from the
+    // device's speed sensor: the distance of a ride without any position.
+    double deviceTrackLengthM = 0.0;
 
     // Iterate over all tracks
     for (pugi::xml_node trk = gpxNode.child("trk"); trk; trk = trk.next_sibling("trk")) {
@@ -108,6 +116,13 @@ ParsedActivity GpxParser::parse() {
         // bound for the GPS-derived max speed (see computeStreamStatistics).
         pugi::xml_node trkExt = trk.child("extensions");
         if (trkExt) {
+            pugi::xml_node lengthNode = trkExt.child("length");
+            if (lengthNode) {
+                const double m = lengthNode.text().as_double(0.0);
+                if (m > 0.0 && std::isfinite(m)) {
+                    deviceTrackLengthM += m;
+                }
+            }
             pugi::xml_node maxSpeedNode = trkExt.child("maxspeed");
             if (maxSpeedNode) {
                 const double ms = maxSpeedNode.text().as_double(0.0);
@@ -128,10 +143,12 @@ ParsedActivity GpxParser::parse() {
                 point.lat = trkpt.attribute("lat").as_double(0.0);
                 point.lon = trkpt.attribute("lon").as_double(0.0);
 
-                // Skip points without valid coordinates
-                if (point.lat == 0.0 && point.lon == 0.0) {
-                    continue;
-                }
+                // (0, 0) is no position: GlobalSat writes every point of a
+                // trainer ride that way. Up to v2.3.2 such points were
+                // dropped with their time and sensors, and a trainer ride
+                // failed with "no valid track points". They are kept as
+                // points without position, like FIT records without one.
+                point.hasPosition = !(point.lat == 0.0 && point.lon == 0.0);
 
                 // Elevation
                 pugi::xml_node eleNode = trkpt.child("ele");
@@ -144,6 +161,12 @@ ParsedActivity GpxParser::parse() {
                 pugi::xml_node timeNode = trkpt.child("time");
                 if (timeNode) {
                     point.timestamp = iso8601ToFitTimestamp(timeNode.child_value());
+                }
+
+                // Without position AND without time a point carries nothing
+                // to keep (its sensors cannot be placed in the ride).
+                if (!point.hasPosition && 0 == point.timestamp) {
+                    continue;
                 }
 
                 // GPX 1.0: <speed> element directly in trkpt
@@ -225,11 +248,16 @@ ParsedActivity GpxParser::parse() {
                     }
                 }
 
-                // Calculate cumulative distance
+                // Cumulative distance, only between two positioned points: a
+                // point without position would add a segment to (0, 0).
+                if (point.hasPosition) {
+                    if (hasPrevPositioned) {
+                        cumulativeDistance += haversineDistance(prevPositioned.lat, prevPositioned.lon, point.lat, point.lon);
+                    }
+                    prevPositioned = point;
+                    hasPrevPositioned = true;
+                }
                 if (hasPrevPoint) {
-                    double segDist = haversineDistance(prevPoint.lat, prevPoint.lon, point.lat, point.lon);
-                    cumulativeDistance += segDist;
-
                     // Calculate ascent/descent
                     if (point.hasElevation && prevPoint.hasElevation) {
                         double eleDiff = point.elevation - prevPoint.elevation;
@@ -252,6 +280,21 @@ ParsedActivity GpxParser::parse() {
 
     if (activity.points.empty()) {
         throw std::runtime_error("GPX file contains no valid track points");
+    }
+
+    // A ride without any position (trainer): its distance is the device's
+    // track total, spread over the points by time so the per-point distance
+    // stream (and the FIT records written from it) grows as the ride did.
+    if (!hasPrevPositioned && deviceTrackLengthM > 0.0) {
+        const uint32_t t0 = activity.points.front().timestamp;
+        const uint32_t t1 = activity.points.back().timestamp;
+        for (auto& pt : activity.points) {
+            pt.distance = (t1 > t0)
+                ? deviceTrackLengthM * static_cast<double>(pt.timestamp - t0) / static_cast<double>(t1 - t0)
+                : 0.0;
+        }
+        cumulativeDistance = deviceTrackLengthM;
+        activity.hasDeviceDistance = true;
     }
 
     // Fill in activity summary

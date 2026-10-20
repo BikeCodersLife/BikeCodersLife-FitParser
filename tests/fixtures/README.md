@@ -1,30 +1,31 @@
 # Test Fixtures
 
-This directory contains FIT files for testing the parser.
+Ride files that `tests/run_tests.sh` parses. They are committed: the suite
+asserts on them (golden JSON in `tests/expected/`, or checks inside the script).
 
-## Files
+## Kinds
 
-- `valid.fit` - A valid FIT file with GPS coordinates (to be added)
-- `invalid.fit` - An invalid FIT file for error handling tests (to be added)
-- `malformed.fit` - A malformed FIT file for robustness tests (to be added)
+- **FIT** (`*.fit`): real device and Zwift files; each is compared with its
+  `tests/expected/<name>.json`.
+- **GPX / TCX** (`*.gpx`, `*.tcx`): every GPX is parsed, converted to FIT and
+  read back (round trip); several have their own section in `run_tests.sh`:
+  sensor fields (`with-power-and-hr.gpx`, `no-sensors-gps-only.gpx`,
+  `tcx-with-sensors.tcx`, `tcx-no-sensors.tcx`), GPS spikes
+  (`make_gps_spike_fixtures.py` builds those), the GlobalSat device max speed
+  (`globalsat-catchup.gpx`), and indoor rides without position
+  (`indoor-no-position.gpx` — GlobalSat writes every point at lat="0"
+  lon="0"; `indoor-no-position.tcx` — no `<Position>` at all).
 
-## Adding Test Files
+## Adding a fixture
 
-You can add your own FIT files here for testing. Common sources:
+Add the file here and, if the generic checks are not enough, a section in
+`run_tests.sh`. A file the parser must reject does not belong here (the
+generic GPX loop expects every `*.gpx` to parse): build it inside the test
+instead, as the "no position and no time" case does.
 
-1. **Garmin Connect**: Export activities as FIT files
-2. **Strava**: Download original FIT files from activities
-3. **Garmin Devices**: Copy FIT files directly from device
-4. **Sample Files**: Use FIT SDK sample files
-
-## Usage
+## Running
 
 ```bash
-# Test with a fixture
-./build/fit-parser tests/fixtures/valid.fit
+./tests/run_tests.sh                       # against build/fit-parser
+PARSER=/path/to/fit-parser ./tests/run_tests.sh   # against another build
 ```
-
-## Note
-
-Test fixtures are gitignored to avoid committing potentially large binary files.
-You can add your own test files locally for development.

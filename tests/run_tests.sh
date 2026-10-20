@@ -467,6 +467,82 @@ for clean in fast-descent.gpx with-power-and-hr.gpx tcx-with-sensors.tcx tcx-no-
 done
 
 echo ""
+echo "--- Indoor rides without position (v2.3.3) ---"
+
+# A trainer ride has no GPS: GlobalSat writes every GPX point at lat="0"
+# lon="0", a Garmin trainer TCX has no <Position> at all. Up to v2.3.2 the
+# GPX/TCX parsers dropped those points with their time, HR, cadence and power,
+# and failed with "no valid track points" (4 GlobalSat trainer rides of one
+# Strava export, 2026-10-20). Keep them as points without position, like the
+# FIT path: lat/lon 0 (JobRunner counts them as no position, tessera makes the
+# ride indoor), time and sensors kept, distance from the device (GPX track
+# <length>, TCX DistanceMeters) instead of from positions.
+for indoor in "indoor-no-position.gpx" "indoor-no-position.tcx"; do
+    TOTAL=$((TOTAL + 1))
+    if "$PARSER" "$FIXTURES_DIR/$indoor" 2>/dev/null > "$TMP_DIR/indoor.json" && python3 - "$indoor" "$TMP_DIR/indoor.json" <<'PY' 2>/dev/null
+import json, sys
+name, d = sys.argv[1], json.load(open(sys.argv[2]))
+c, s = d['coordinates'], d['summary']
+gpx = name.endswith('.gpx')
+assert len(c) == (120 if gpx else 60), f'{len(c)} points kept'
+assert all(p['lat'] == 0 and p['lon'] == 0 for p in c), 'a point got a position'
+assert all('heartRate' in p for p in c), 'heart rate lost'
+assert all('cadence' in p for p in c), 'cadence lost'
+assert abs(s['durationMin'] - (238 if gpx else 236) / 60) < 0.05, f"durationMin {s['durationMin']}"
+assert abs(s['distanceKm'] - (1.0 if gpx else 1.475)) < 0.01, f"distanceKm {s['distanceKm']}"
+assert 'avgHeartRate' in s and 'avgCadence' in s, 'summary lost the sensors'
+if not gpx:
+    assert 'avgPower' in s, 'summary lost the power'
+PY
+    then
+        pass "$indoor: a ride without position keeps its time, sensors and distance"
+    else
+        fail "$indoor: a ride without position is dropped or loses data"
+    fi
+done
+
+# The same ride converted to FIT and read back keeps its points, heart rate
+# and distance (the pipeline stores every GPX/TCX as FIT).
+TOTAL=$((TOTAL + 1))
+if "$PARSER" "$FIXTURES_DIR/indoor-no-position.gpx" --convert "$TMP_DIR/indoor.fit" 2>/dev/null \
+    && "$PARSER" "$TMP_DIR/indoor.fit" 2>/dev/null > "$TMP_DIR/indoor-fit.json" \
+    && python3 - "$TMP_DIR/indoor-fit.json" <<'PY' 2>/dev/null
+import json, sys
+d = json.load(open(sys.argv[1]))
+c, s = d['coordinates'], d['summary']
+assert len(c) == 120, f'{len(c)} points after FIT round trip'
+assert all(p['lat'] == 0 and p['lon'] == 0 for p in c), 'a point got a position'
+assert all('heartRate' in p for p in c), 'heart rate lost'
+# FIT semantics: distanceKm is the GPS distance (0 indoors); the device
+# distance is the session total, as for every indoor FIT.
+assert abs(s.get('sessionDistanceKm', 0) - 1.0) < 0.01, f"sessionDistanceKm {s.get('sessionDistanceKm')}"
+PY
+then
+    pass "indoor-no-position.gpx → FIT → JSON keeps points, heart rate and distance"
+else
+    fail "indoor-no-position.gpx → FIT round trip loses the ride"
+fi
+
+# Points without position AND without time carry nothing to keep: still an error.
+TOTAL=$((TOTAL + 1))
+cat > "$TMP_DIR/no-position-no-time.gpx" <<'GPX'
+<?xml version="1.0"?>
+<gpx version="1.1" creator="test" xmlns="http://www.topografix.com/GPX/1/1">
+  <trk><trkseg>
+    <trkpt lat="0" lon="0"><ele>5</ele></trkpt>
+    <trkpt lat="0" lon="0"><ele>5</ele></trkpt>
+  </trkseg></trk>
+</gpx>
+GPX
+if err=$("$PARSER" "$TMP_DIR/no-position-no-time.gpx" 2>&1 >/dev/null); then
+    fail "no-position-no-time.gpx: parsed a file with nothing to keep"
+elif echo "$err" | grep -q "no valid track points"; then
+    pass "no-position-no-time.gpx: still rejected (no valid track points)"
+else
+    fail "no-position-no-time.gpx: rejected with an unexpected error: $err"
+fi
+
+echo ""
 echo "========================================="
 echo "Results: $PASSED/$TOTAL passed, $FAILED failed"
 echo "========================================="

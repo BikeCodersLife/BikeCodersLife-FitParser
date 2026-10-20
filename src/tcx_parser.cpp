@@ -92,6 +92,10 @@ ParsedActivity TcxParser::parse() {
     double totalDescent = 0.0;
     TrackPoint prevPoint;
     bool hasPrevPoint = false;
+    // Last point WITH a position (v2.3.3): the distance fallback is only
+    // measured between two positioned points.
+    TrackPoint prevPositioned;
+    bool hasPrevPositioned = false;
 
     // Iterate over activities (or courses)
     for (pugi::xml_node act = activities.first_child(); act; act = act.next_sibling()) {
@@ -129,8 +133,13 @@ ParsedActivity TcxParser::parse() {
                         }
                     }
 
-                    // Skip points without valid coordinates
-                    if (point.lat == 0.0 && point.lon == 0.0) {
+                    // No <Position> (a trainer TCX) or (0, 0) is no position.
+                    // Up to v2.3.2 such points were dropped with their time and
+                    // sensors; they are kept as points without position, like
+                    // FIT records without one. Without time as well they carry
+                    // nothing to keep.
+                    point.hasPosition = !(point.lat == 0.0 && point.lon == 0.0);
+                    if (!point.hasPosition && 0 == point.timestamp) {
                         continue;
                     }
 
@@ -213,13 +222,23 @@ ParsedActivity TcxParser::parse() {
                         }
                     }
 
-                    // Calculate distance if TCX did not provide it
-                    if (hasPrevPoint && point.distance == 0.0) {
-                        double segDist = haversineDistance(prevPoint.lat, prevPoint.lon, point.lat, point.lon);
-                        cumulativeDistance += segDist;
-                        point.distance = cumulativeDistance;
+                    // Calculate distance if TCX did not provide it, only
+                    // between two positioned points (a point without position
+                    // would add a segment to (0, 0)). For a file where every
+                    // point has a position this is the v2.3.2 rule.
+                    if (point.distance == 0.0) {
+                        if (point.hasPosition && hasPrevPositioned) {
+                            cumulativeDistance += haversineDistance(prevPositioned.lat, prevPositioned.lon, point.lat, point.lon);
+                            point.distance = cumulativeDistance;
+                        } else if (hasPrevPoint) {
+                            point.distance = cumulativeDistance;
+                        }
                     } else if (point.distance > 0.0) {
                         cumulativeDistance = point.distance;
+                    }
+                    if (point.hasPosition) {
+                        prevPositioned = point;
+                        hasPrevPositioned = true;
                     }
 
                     // Calculate ascent/descent
