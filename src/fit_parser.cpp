@@ -1,4 +1,5 @@
 #include "fit_parser.h"
+#include "fit_validator.h"
 #include <fstream>
 #include <stdexcept>
 #include <cmath>
@@ -641,6 +642,13 @@ void computeStreamStatistics(RideStatistic& stats) {
 }
 
 RideStatistic FitParser::extractCoordinates() {
+    // The vendor SDK decoder is memory-unsafe on hostile definitions: check the structure first.
+    {
+        const std::string reason = validateFitFile(filename_);
+        if (!reason.empty()) {
+            throw std::runtime_error("invalid FIT structure: " + reason);
+        }
+    }
     // Open FIT file
     std::fstream file(filename_, std::ios::in | std::ios::binary);
     if (!file.is_open()) {

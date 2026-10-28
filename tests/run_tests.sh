@@ -742,7 +742,7 @@ PY
     python3 "$CHECK_PY" mkraw bench "$TMP_DIR/bench.fit" "$BENCH_N"
     TOTAL=$((TOTAL + 1))
     t0=$(date +%s%N)
-    out=$("$PARSER" "$TMP_DIR/bench.fit" --strip-health "$TMP_DIR/bench-out.fit" 2>/dev/null); rc=$?
+    rc=0; out=$("$PARSER" "$TMP_DIR/bench.fit" --strip-health "$TMP_DIR/bench-out.fit" 2>/dev/null) || rc=$?
     t1=$(date +%s%N)
     ms=$(( (t1 - t0) / 1000000 ))
     insz=$(wc -c < "$TMP_DIR/bench.fit"); outsz=$(wc -c < "$TMP_DIR/bench-out.fit")
@@ -766,6 +766,74 @@ assert 21 * n < $outsz < 21 * n + 200, ($outsz, 21 * n)
         pass "synthetic 2000-point FIT: same track, no health [$(cat "$TMP_DIR/check.txt")]"
     else
         fail "synthetic 2000-point FIT: $(head -3 "$TMP_DIR/check.txt")"
+    fi
+
+    # structural refusals: strip AND plain parse refuse cleanly (exit 1, never a crash), no output file
+    INVALID_DIR="$FIXTURES_DIR/invalid"
+    for kind in zerosize badbase oddsize arch2 nodef dupfield; do
+        python3 "$CHECK_PY" mkraw "$kind" "$TMP_DIR/inv-$kind.fit"
+    done
+    for bad in "$TMP_DIR"/inv-*.fit "$INVALID_DIR"/*.fit; do
+        [ ! -f "$bad" ] && continue
+        TOTAL=$((TOTAL + 1))
+        rm -rf "$TMP_DIR/failout" && mkdir "$TMP_DIR/failout"
+        rc1=0; rc2=0
+        "$PARSER" "$bad" --strip-health "$TMP_DIR/failout/out.fit" > /dev/null 2>"$TMP_DIR/err1.txt" || rc1=$?
+        "$PARSER" "$bad" > /dev/null 2>"$TMP_DIR/err2.txt" || rc2=$?
+        if [ $rc1 -eq 1 ] && [ $rc2 -eq 1 ] && [ -z "$(ls -A "$TMP_DIR/failout")" ] \
+            && grep -q "invalid FIT structure" "$TMP_DIR/err1.txt" "$TMP_DIR/err2.txt"; then
+            pass "$(basename "$bad"): refused by strip and parse ($(sed 's/.*structure: //' "$TMP_DIR/err1.txt"))"
+        else
+            fail "$(basename "$bad"): strip rc=$rc1, parse rc=$rc2 (want 1/1 with 'invalid FIT structure'): $(head -1 "$TMP_DIR/err1.txt") / $(head -1 "$TMP_DIR/err2.txt")"
+        fi
+    done
+    # a compressed timestamp with no earlier full timestamp cannot be expanded: strip refuses
+    TOTAL=$((TOTAL + 1))
+    python3 "$CHECK_PY" mkraw compressed-first "$TMP_DIR/cfirst.fit"
+    if "$PARSER" "$TMP_DIR/cfirst.fit" --strip-health "$TMP_DIR/cfirst-out.fit" > /dev/null 2>&1 || [ -e "$TMP_DIR/cfirst-out.fit" ]; then
+        fail "compressed timestamp without reference accepted"
+    else
+        pass "compressed timestamp without a previous full timestamp: refused, no output"
+    fi
+    # nothing left after cleaning (only health messages): refused, no output
+    TOTAL=$((TOTAL + 1))
+    python3 "$CHECK_PY" mkraw allhealth "$TMP_DIR/allhealth.fit"
+    if "$PARSER" "$TMP_DIR/allhealth.fit" --strip-health "$TMP_DIR/allhealth-out.fit" > /dev/null 2>&1 || [ -e "$TMP_DIR/allhealth-out.fit" ]; then
+        fail "file with only health messages produced an output"
+    else
+        pass "file with nothing left after cleaning: refused, no output"
+    fi
+    # empty definition (no fields) is legal: dropped
+    TOTAL=$((TOTAL + 1))
+    python3 "$CHECK_PY" mkraw emptydef-ok "$TMP_DIR/emptydef.fit"
+    if "$PARSER" "$TMP_DIR/emptydef.fit" --strip-health "$TMP_DIR/emptydef-out.fit" > /dev/null 2>&1; then
+        pass "definition without fields: accepted"
+    else
+        fail "definition without fields: refused"
+    fi
+    # header bytes are the same for every output (protocol 2.0, SDK profile version)
+    TOTAL=$((TOTAL + 1))
+    if [ "$(head -c 4 "$TMP_DIR/rich-out.fit" | xxd -p)" = "0e20a652" ] && [ "$(head -c 4 "$TMP_DIR/compressed.fit" | xxd -p)" != "0e20a652" ] \
+        && "$PARSER" "$TMP_DIR/compressed.fit" --strip-health "$TMP_DIR/comp-out2.fit" > /dev/null 2>&1 \
+        && [ "$(head -c 4 "$TMP_DIR/comp-out2.fit" | xxd -p)" = "0e20a652" ]; then
+        pass "output header normalised (14 bytes, protocol 2.0, profile 21158)"
+    else
+        fail "output header not normalised"
+    fi
+    # empty input to the library call is an error (the CLI refuses empty files before)
+    # compressed timestamp file speed
+    BENCH_N="${BENCH_RECORDS:-400000}"
+    python3 "$CHECK_PY" mkraw bench-compressed "$TMP_DIR/benchc.fit" "$BENCH_N"
+    TOTAL=$((TOTAL + 1))
+    t0=$(date +%s%N)
+    rc=0; out=$("$PARSER" "$TMP_DIR/benchc.fit" --strip-health "$TMP_DIR/benchc-out.fit" 2>/dev/null) || rc=$?
+    t1=$(date +%s%N)
+    ms=$(( (t1 - t0) / 1000000 ))
+    outsz=$(wc -c < "$TMP_DIR/benchc-out.fit")
+    if [ $rc -eq 0 ] && [ "$ms" -lt 10000 ] && [ "$outsz" -gt $((21 * BENCH_N)) ] && [ "$outsz" -lt $((21 * BENCH_N + 300)) ]; then
+        pass "benchmark compressed timestamps: $BENCH_N records, $(( $(wc -c < "$TMP_DIR/benchc.fit") / 1000000 )) MB in, ${ms} ms"
+    else
+        fail "benchmark compressed timestamps: rc=$rc ${ms} ms out=$outsz"
     fi
 
     # usage errors

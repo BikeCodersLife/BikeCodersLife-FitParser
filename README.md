@@ -132,9 +132,17 @@ the last valid file (junk, padding, a damaged chained file) are not copied, are
 counted in `trailingBytesDropped` and reported on stderr.
 
 Speed: a linear byte-level rewrite driven by the same table (a 34 MB FIT takes
-about 0.35 s, peak memory under 3x the file size). Files with compressed-timestamp
-headers take the slower SDK decode/encode path (~1 MB/s), where a message cannot
-simply be cut out of the byte stream.
+about 0.35 s, peak memory under 3x the file size). The strip never calls the vendor
+SDK decoder. Compressed-timestamp record headers are expanded to full timestamps
+(computed from the last full timestamp, rolling 5 bit offset) at the same speed.
+The output header is always the same 14 bytes (protocol 2.0, profile 21158).
+
+Structure checks (strip mode, and since v2.4.0 also the plain parse mode, `--convert`
+and `gps-stripper` before the SDK decoder sees a byte): a file with a zero sized
+field, a size that is not a multiple of its base type, a base type number outside
+the FIT table, an architecture byte above 1, a data message without a definition,
+duplicate field numbers in one definition, or a record stream that does not end at
+the header's data size exits non-zero with `invalid FIT structure: <reason>`.
 
 Callers: pass a fresh output path. An existing file is replaced only on success
 and is never deleted on failure. Handled failures remove the temporary files

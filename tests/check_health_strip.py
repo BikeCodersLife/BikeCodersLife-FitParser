@@ -156,6 +156,34 @@ def make_raw(kind, out, n):
         for i in range(4):
             d += bytes([1]) + struct.pack("<IiiBB", T0 + i, 626000000 + i * 1000, 60000000 + i * 1500, 140, 99)
             d += bytes([2]) + struct.pack("<BH", 7, 4242)
+    elif kind in ("zerosize", "badbase", "oddsize", "arch2", "nodef", "dupfield", "compressed-first", "emptydef-ok", "allhealth"):
+        d = FILE_ID
+        if kind == "zerosize":
+            d += definition(1, 20, [(253, 4, U32), (3, 0, U8)]) + bytes([1]) + struct.pack("<I", T0)
+        elif kind == "badbase":
+            d += definition(1, 20, [(253, 4, U32), (3, 1, 0x1F)]) + bytes([1]) + struct.pack("<IB", T0, 1)
+        elif kind == "oddsize":
+            d += definition(1, 20, [(253, 4, U32), (7, 3, U16)]) + bytes([1]) + struct.pack("<I", T0) + b"abc"
+        elif kind == "arch2":
+            dd = bytearray(definition(1, 20, [(253, 4, U32)]))
+            dd[2] = 2
+            d += bytes(dd) + bytes([1]) + struct.pack("<I", T0)
+        elif kind == "nodef":
+            d += bytes([5]) + struct.pack("<I", T0)
+        elif kind == "dupfield":
+            d += definition(1, 21, [(253, 4, U32), (0, 1, 0x00), (0, 1, 0x00)]) + bytes([1]) + struct.pack("<IBB", T0, 13, 0)
+        elif kind == "compressed-first":
+            d += definition(2, 20, [(0, 4, S32)]) + bytes([0x80 | (2 << 5) | 3]) + struct.pack("<i", 626000000)
+        elif kind == "allhealth":
+            d = definition(0, 78, [(0, 4, U32)]) + bytes([0]) + struct.pack("<I", 1000)  # hrv only: nothing survives
+        elif kind == "emptydef-ok":
+            d += definition(1, 20, []) + bytes([1])
+    elif kind == "bench-compressed":
+        d = FILE_ID
+        d += definition(1, 20, [(253, 4, U32), (0, 4, S32), (1, 4, S32)]) + bytes([1]) + struct.pack("<Iii", T0, 626000000, 60000000)
+        d += definition(2, 20, [(0, 4, S32), (1, 4, S32), (2, 2, U16), (3, 1, U8), (7, 2, U16), (4, 1, U8), (5, 4, U32), (6, 2, U16)])
+        rec = struct.Struct("<BiiHBHBIH")
+        d += b"".join(rec.pack(0x80 | (2 << 5) | ((i + 1) & 0x1F), 626000000 + i * 100, 60000000 + i * 150, 1000 + i % 50, 120 + i % 60, 150 + i % 200, 90, i * 5, 7000) for i in range(n))
     elif kind == "bench":
         d = FILE_ID
         d += definition(1, 20, [(253, 4, U32), (0, 4, S32), (1, 4, S32), (2, 2, U16), (3, 1, U8), (7, 2, U16), (4, 1, U8), (5, 4, U32), (6, 2, U16)])
