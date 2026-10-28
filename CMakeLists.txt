@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.15)
-project(fit-parser VERSION 2.3.3 LANGUAGES CXX)
+project(fit-parser VERSION 2.4.0 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -36,6 +36,7 @@ set(APP_SOURCES
     src/gpx_parser.cpp
     src/tcx_parser.cpp
     src/fit_writer.cpp
+    src/health_stripper.cpp
 )
 
 # Create fit-parser executable

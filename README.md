@@ -11,6 +11,7 @@ High-performance C++ multi-format cycling file parser and converter. Parses FIT,
 - **Fast**: Parses 300KB files in ~200ms (55,000 points/second)
 - **Secure**: Resource limits (256MB memory, 30s CPU), file validation, path sanitization
 - **GPS Stripper**: Companion tool to trim GPS data from ride start/end for privacy
+- **Health strip** (`--strip-health`, v2.4.0): removes heart rate, power, cadence and every other physiological or biomechanical value, plus all developer data, and writes a clean FIT
 
 ## Quick Start
 
@@ -99,6 +100,36 @@ fit-parser activity.tcx --convert activity.fit
 gps-stripper ride.fit stripped_ride.fit 2000 2000
 ```
 
+### Health data stripping
+
+```bash
+# FIT, GPX or TCX in, a FIT without health data out
+fit-parser ride.fit --strip-health clean.fit
+# stdout: {"droppedMessages": 497, "strippedFields": 107718, "developerFieldsRemoved": 25295}
+```
+
+For riders who turned "health data" off: the file is decoded with the FIT SDK and
+re-encoded message by message (same order, valid header and CRC), keeping time,
+position, altitude, distance, speed, ambient temperature, grade, GPS accuracy,
+events, laps / sessions and device info (including sensor battery). Removed:
+heart rate, HRV, power and everything derived from it, cadence and cycle counts,
+respiration, core body temperature, running and pedalling dynamics, muscle
+oxygen, calories, training load, zones, user profile, sleep and monitoring
+data, and **all developer data** (CORE, Stryd, Moxy and similar carry their
+values there).
+
+It is an allow-list: a message or field that is not in the table is removed.
+The table is decided field by field from the FIT SDK profile and lives in
+[`docs/health-strip.md`](docs/health-strip.md) (generated from
+`docs/health-strip-table.tsv` by `tools/gen_health_table.py`).
+
+Fail closed: a file that cannot be decoded or cleaned (truncated, bad CRC, not
+FIT) gives a non-zero exit and **no output file**; the output is written under a
+temporary name and renamed only on success. GPX/TCX input is converted to FIT
+first and then goes through the same filter, so every source ends up behind one
+filter. A FIT holding several chained files has each of them cleaned; bytes after
+the last valid file are not copied.
+
 ## Supported Sensor Data
 
 | Sensor | FIT | GPX | TCX | Notes |
@@ -164,11 +195,11 @@ cd BikeCodersLife-FitParser
 
 mkdir build && cd build
 cmake -DCMAKE_BUILD_TYPE=Release ..
-make -j$(nproc) fit-parser gps-stripper
+make -j$(nproc) fit-parser gps-stripper health-fit-tool   # health-fit-tool: test helper only
 
 # Verify
 ./fit-parser --version
-# BikeCodersLife FIT Parser v2.0.0
+# BikeCodersLife FIT Parser v2.4.0
 
 # Run tests
 cd .. && chmod +x tests/run_tests.sh && tests/run_tests.sh

@@ -7,6 +7,7 @@ fails. Work through this list top to bottom for every release.
 ## 1. In this repo (before tagging)
 
 - [ ] `src/main.cpp` — `printVersion()`: bump the headline + add a changelog line
+- [ ] if `docs/health-strip-table.tsv` changed: `python3 tools/gen_health_table.py` (the test suite fails when the generated files are stale)
 - [ ] `CMakeLists.txt` — `project(fit-parser VERSION x.y.z ...)` (this one was
       forgotten for all of v2.1.x — hence this file)
 - [ ] `tests/generate_expected.sh` if the JSON output changed, then

@@ -1,0 +1,655 @@
+# kind	msg_num	msg_name	field_num	field_name	units	decision(K=keep,R=remove)	reason
+M	0	file_id				K	kept (no health fields)
+F	0	file_id	0	type		K	
+F	0	file_id	1	manufacturer		K	
+F	0	file_id	2	product		K	
+F	0	file_id	3	serial_number		K	
+F	0	file_id	4	time_created		K	
+F	0	file_id	5	number		K	
+F	0	file_id	8	product_name		K	
+M	49	file_creator				K	kept (no health fields)
+F	49	file_creator	0	software_version		K	
+F	49	file_creator	1	hardware_version		K	
+M	162	timestamp_correlation				K	kept (no health fields)
+F	162	timestamp_correlation	253	timestamp	s	K	
+F	162	timestamp_correlation	0	fractional_timestamp	s	K	
+F	162	timestamp_correlation	1	system_timestamp	s	K	
+F	162	timestamp_correlation	2	fractional_system_timestamp	s	K	
+F	162	timestamp_correlation	3	local_timestamp	s	K	local timestamp (owner: kept)
+F	162	timestamp_correlation	4	timestamp_ms	ms	K	
+F	162	timestamp_correlation	5	system_timestamp_ms	ms	K	
+M	35	software				K	kept (no health fields)
+F	35	software	254	message_index		K	
+F	35	software	3	version		K	
+F	35	software	5	part_number		K	
+M	106	slave_device				K	kept (no health fields)
+F	106	slave_device	0	manufacturer		K	
+F	106	slave_device	1	product		K	
+M	1	capabilities				R	device capabilities
+M	37	file_capabilities				R	file capabilities
+M	38	mesg_capabilities				R	message capabilities
+M	39	field_capabilities				R	field capabilities
+M	2	device_settings				R	device settings (lactate threshold autodetect, HR/power related settings)
+M	3	user_profile				R	user profile: resting/max heart rate, weight, height, age, HR and power settings
+M	4	hrm_profile				R	heart rate monitor profile
+M	5	sdm_profile				R	foot pod profile (cadence / stride calibration)
+M	6	bike_profile				R	bike profile: power meter calibration, crank length
+M	127	connectivity				R	connectivity settings
+M	159	watchface_settings				R	watchface settings
+M	188	ohr_settings				R	optical heart rate settings
+M	216	time_in_zone				R	time in zone: heart rate / power / cadence zones
+M	7	zones_target				R	zones target: max / threshold heart rate, FTP
+M	12	sport				K	kept (no health fields)
+F	12	sport	0	sport		K	
+F	12	sport	1	sub_sport		K	
+F	12	sport	3	name		K	
+M	8	hr_zone				R	heart rate zones
+M	53	speed_zone				R	speed zones (zone configuration)
+M	131	cadence_zone				R	cadence zones
+M	9	power_zone				R	power zones
+M	10	met_zone				R	metabolic (MET) zones
+M	258	dive_settings				R	dive settings
+M	262	dive_alarm				R	dive alarm
+M	393	dive_apnea_alarm				R	dive apnea alarm
+M	259	dive_gas				R	dive gas
+M	15	goal				R	goal (calories, heart rate, power targets)
+M	34	activity				K	kept (no health fields)
+F	34	activity	253	timestamp		K	
+F	34	activity	0	total_timer_time	s	K	timer time of the activity
+F	34	activity	1	num_sessions		K	
+F	34	activity	2	type		K	
+F	34	activity	3	event		K	
+F	34	activity	4	event_type		K	
+F	34	activity	5	local_timestamp		K	local timestamp (owner: kept)
+F	34	activity	6	event_group		K	
+M	18	session				K	kept (filtered per field)
+F	18	session	254	message_index		K	
+F	18	session	253	timestamp	s	K	
+F	18	session	0	event		K	
+F	18	session	1	event_type		K	
+F	18	session	2	start_time		K	
+F	18	session	3	start_position_lat	semicircles	K	
+F	18	session	4	start_position_long	semicircles	K	
+F	18	session	5	sport		K	
+F	18	session	6	sub_sport		K	
+F	18	session	7	total_elapsed_time	s	K	
+F	18	session	8	total_timer_time	s	K	
+F	18	session	9	total_distance	m	K	
+F	18	session	10	total_cycles	cycles	R	cadence / cycle / stroke count
+F	18	session	11	total_calories	kcal	R	calories
+F	18	session	13	total_fat_calories	kcal	R	calories
+F	18	session	14	avg_speed	m/s	K	
+F	18	session	15	max_speed	m/s	K	
+F	18	session	16	avg_heart_rate	bpm	R	heart rate
+F	18	session	17	max_heart_rate	bpm	R	heart rate
+F	18	session	18	avg_cadence	rpm	R	cadence / cycle / stroke count
+F	18	session	19	max_cadence	rpm	R	cadence / cycle / stroke count
+F	18	session	20	avg_power	watts	R	power
+F	18	session	21	max_power	watts	R	power
+F	18	session	22	total_ascent	m	K	
+F	18	session	23	total_descent	m	K	
+F	18	session	24	total_training_effect		R	training load metric
+F	18	session	25	first_lap_index		K	lap index
+F	18	session	26	num_laps		K	
+F	18	session	27	event_group		K	
+F	18	session	28	trigger		K	
+F	18	session	29	nec_lat	semicircles	K	
+F	18	session	30	nec_long	semicircles	K	
+F	18	session	31	swc_lat	semicircles	K	
+F	18	session	32	swc_long	semicircles	K	
+F	18	session	33	num_lengths	lengths	K	
+F	18	session	34	normalized_power	watts	R	power
+F	18	session	35	training_stress_score	tss	R	training load metric
+F	18	session	36	intensity_factor	if	R	training load metric
+F	18	session	37	left_right_balance		R	pedalling dynamics (balance, torque, smoothness, platform offset, power phase)
+F	18	session	38	end_position_lat	semicircles	K	
+F	18	session	39	end_position_long	semicircles	K	
+F	18	session	41	avg_stroke_count	strokes/lap	R	swimming / stroke data
+F	18	session	42	avg_stroke_distance	m	R	swimming / stroke data
+F	18	session	43	swim_stroke	swim_stroke	R	swimming / stroke data
+F	18	session	44	pool_length	m	K	pool length
+F	18	session	45	threshold_power	watts	R	power
+F	18	session	46	pool_length_unit		K	pool length unit
+F	18	session	47	num_active_lengths	lengths	K	
+F	18	session	48	total_work	J	R	work (energy)
+F	18	session	49	avg_altitude	m	K	
+F	18	session	50	max_altitude	m	K	
+F	18	session	51	gps_accuracy	m	K	
+F	18	session	52	avg_grade	%	K	
+F	18	session	53	avg_pos_grade	%	K	
+F	18	session	54	avg_neg_grade	%	K	
+F	18	session	55	max_pos_grade	%	K	
+F	18	session	56	max_neg_grade	%	K	
+F	18	session	57	avg_temperature	C	K	
+F	18	session	58	max_temperature	C	K	
+F	18	session	59	total_moving_time	s	K	
+F	18	session	60	avg_pos_vertical_speed	m/s	K	
+F	18	session	61	avg_neg_vertical_speed	m/s	K	
+F	18	session	62	max_pos_vertical_speed	m/s	K	
+F	18	session	63	max_neg_vertical_speed	m/s	K	
+F	18	session	64	min_heart_rate	bpm	R	heart rate
+F	18	session	65	time_in_hr_zone	s	R	time in zone (heart rate / cadence / power / speed zones)
+F	18	session	66	time_in_speed_zone	s	R	time in zone (heart rate / cadence / power / speed zones)
+F	18	session	67	time_in_cadence_zone	s	R	time in zone (heart rate / cadence / power / speed zones)
+F	18	session	68	time_in_power_zone	s	R	time in zone (heart rate / cadence / power / speed zones)
+F	18	session	69	avg_lap_time	s	K	average lap time
+F	18	session	70	best_lap_index		K	lap index
+F	18	session	71	min_altitude	m	K	
+F	18	session	82	player_score		R	ball-sport data, not a ride field
+F	18	session	83	opponent_score		R	ball-sport data, not a ride field
+F	18	session	84	opponent_name		R	ball-sport data, not a ride field
+F	18	session	85	stroke_count	counts	R	swimming / stroke data
+F	18	session	86	zone_count	counts	R	time in zone (heart rate / cadence / power / speed zones)
+F	18	session	87	max_ball_speed	m/s	R	ball-sport data, not a ride field
+F	18	session	88	avg_ball_speed	m/s	R	ball-sport data, not a ride field
+F	18	session	89	avg_vertical_oscillation	mm	R	running dynamics
+F	18	session	90	avg_stance_time_percent	percent	R	running dynamics
+F	18	session	91	avg_stance_time	ms	R	running dynamics
+F	18	session	92	avg_fractional_cadence	rpm	R	cadence / cycle / stroke count
+F	18	session	93	max_fractional_cadence	rpm	R	cadence / cycle / stroke count
+F	18	session	94	total_fractional_cycles	cycles	R	cadence / cycle / stroke count
+F	18	session	95	avg_total_hemoglobin_conc	g/dL	R	muscle oxygen (tHb / SmO2)
+F	18	session	96	min_total_hemoglobin_conc	g/dL	R	muscle oxygen (tHb / SmO2)
+F	18	session	97	max_total_hemoglobin_conc	g/dL	R	muscle oxygen (tHb / SmO2)
+F	18	session	98	avg_saturated_hemoglobin_percent	%	R	muscle oxygen (tHb / SmO2)
+F	18	session	99	min_saturated_hemoglobin_percent	%	R	muscle oxygen (tHb / SmO2)
+F	18	session	100	max_saturated_hemoglobin_percent	%	R	muscle oxygen (tHb / SmO2)
+F	18	session	101	avg_left_torque_effectiveness	percent	R	pedalling dynamics (balance, torque, smoothness, platform offset, power phase)
+F	18	session	102	avg_right_torque_effectiveness	percent	R	pedalling dynamics (balance, torque, smoothness, platform offset, power phase)
+F	18	session	103	avg_left_pedal_smoothness	percent	R	pedalling dynamics (balance, torque, smoothness, platform offset, power phase)
+F	18	session	104	avg_right_pedal_smoothness	percent	R	pedalling dynamics (balance, torque, smoothness, platform offset, power phase)
+F	18	session	105	avg_combined_pedal_smoothness	percent	R	pedalling dynamics (balance, torque, smoothness, platform offset, power phase)
+F	18	session	110	sport_profile_name		K	
+F	18	session	111	sport_index		K	
+F	18	session	112	time_standing	s	R	rider posture (standing time/count)
+F	18	session	113	stand_count		R	rider posture (standing time/count)
+F	18	session	114	avg_left_pco	mm	R	pedalling dynamics (balance, torque, smoothness, platform offset, power phase)
+F	18	session	115	avg_right_pco	mm	R	pedalling dynamics (balance, torque, smoothness, platform offset, power phase)
+F	18	session	116	avg_left_power_phase	degrees	R	pedalling dynamics (balance, torque, smoothness, platform offset, power phase)
+F	18	session	117	avg_left_power_phase_peak	degrees	R	pedalling dynamics (balance, torque, smoothness, platform offset, power phase)
+F	18	session	118	avg_right_power_phase	degrees	R	pedalling dynamics (balance, torque, smoothness, platform offset, power phase)
+F	18	session	119	avg_right_power_phase_peak	degrees	R	pedalling dynamics (balance, torque, smoothness, platform offset, power phase)
+F	18	session	120	avg_power_position	watts	R	power
+F	18	session	121	max_power_position	watts	R	power
+F	18	session	122	avg_cadence_position	rpm	R	cadence / cycle / stroke count
+F	18	session	123	max_cadence_position	rpm	R	cadence / cycle / stroke count
+F	18	session	124	enhanced_avg_speed	m/s	K	
+F	18	session	125	enhanced_max_speed	m/s	K	
+F	18	session	126	enhanced_avg_altitude	m	K	
+F	18	session	127	enhanced_min_altitude	m	K	
+F	18	session	128	enhanced_max_altitude	m	K	
+F	18	session	129	avg_lev_motor_power	watts	R	e-bike motor power
+F	18	session	130	max_lev_motor_power	watts	R	e-bike motor power
+F	18	session	131	lev_battery_consumption	percent	K	e-bike battery use, device state
+F	18	session	132	avg_vertical_ratio	percent	R	running dynamics
+F	18	session	133	avg_stance_time_balance	percent	R	pedalling dynamics (balance, torque, smoothness, platform offset, power phase)
+F	18	session	134	avg_step_length	mm	R	running dynamics
+F	18	session	137	total_anaerobic_training_effect		R	training load metric
+F	18	session	139	avg_vam	m/s	K	ascent speed from altitude and time
+F	18	session	140	avg_depth	m	R	dive data, not a ride field
+F	18	session	141	max_depth	m	R	dive data, not a ride field
+F	18	session	142	surface_interval	s	R	dive data, not a ride field
+F	18	session	143	start_cns	percent	R	respiration / dive physiology
+F	18	session	144	end_cns	percent	R	respiration / dive physiology
+F	18	session	145	start_n2	percent	R	respiration / dive physiology
+F	18	session	146	end_n2	percent	R	respiration / dive physiology
+F	18	session	147	avg_respiration_rate		R	respiration / dive physiology
+F	18	session	148	max_respiration_rate		R	respiration / dive physiology
+F	18	session	149	min_respiration_rate		R	respiration / dive physiology
+F	18	session	150	min_temperature	C	K	
+F	18	session	155	o2_toxicity	OTUs	R	respiration / dive physiology
+F	18	session	156	dive_number		R	dive data, not a ride field
+F	18	session	168	training_load_peak		R	training load metric
+F	18	session	169	enhanced_avg_respiration_rate	Breaths/min	R	respiration / dive physiology
+F	18	session	170	enhanced_max_respiration_rate	Breaths/min	R	respiration / dive physiology
+F	18	session	180	enhanced_min_respiration_rate		R	respiration / dive physiology
+F	18	session	181	total_grit	kGrit	K	MTB terrain metric
+F	18	session	182	total_flow	Flow	K	MTB terrain metric
+F	18	session	183	jump_count		K	jump count from motion on the bike, not a body value
+F	18	session	186	avg_grit	kGrit	K	MTB terrain metric
+F	18	session	187	avg_flow	Flow	K	MTB terrain metric
+F	18	session	192	workout_feel		R	perceived effort / feel
+F	18	session	193	workout_rpe		R	perceived effort / feel
+F	18	session	194	avg_spo2	percent	R	blood oxygen
+F	18	session	195	avg_stress	percent	R	stress
+F	18	session	197	sdrr_hrv	mS	R	heart rate variability
+F	18	session	198	rmssd_hrv	mS	R	heart rate variability
+F	18	session	199	total_fractional_ascent	m	K	
+F	18	session	200	total_fractional_descent	m	K	
+F	18	session	208	avg_core_temperature	C	R	core body temperature
+F	18	session	209	min_core_temperature	C	R	core body temperature
+F	18	session	210	max_core_temperature	C	R	core body temperature
+M	19	lap				K	kept (filtered per field)
+F	19	lap	254	message_index		K	
+F	19	lap	253	timestamp	s	K	
+F	19	lap	0	event		K	
+F	19	lap	1	event_type		K	
+F	19	lap	2	start_time		K	
+F	19	lap	3	start_position_lat	semicircles	K	
+F	19	lap	4	start_position_long	semicircles	K	
+F	19	lap	5	end_position_lat	semicircles	K	
+F	19	lap	6	end_position_long	semicircles	K	
+F	19	lap	7	total_elapsed_time	s	K	
+F	19	lap	8	total_timer_time	s	K	
+F	19	lap	9	total_distance	m	K	
+F	19	lap	10	total_cycles	cycles	R	cadence / cycle / stroke count
+F	19	lap	11	total_calories	kcal	R	calories
+F	19	lap	12	total_fat_calories	kcal	R	calories
+F	19	lap	13	avg_speed	m/s	K	
+F	19	lap	14	max_speed	m/s	K	
+F	19	lap	15	avg_heart_rate	bpm	R	heart rate
+F	19	lap	16	max_heart_rate	bpm	R	heart rate
+F	19	lap	17	avg_cadence	rpm	R	cadence / cycle / stroke count
+F	19	lap	18	max_cadence	rpm	R	cadence / cycle / stroke count
+F	19	lap	19	avg_power	watts	R	power
+F	19	lap	20	max_power	watts	R	power
+F	19	lap	21	total_ascent	m	K	
+F	19	lap	22	total_descent	m	K	
+F	19	lap	23	intensity		K	workout structure (active/rest), not a sensor value
+F	19	lap	24	lap_trigger		K	
+F	19	lap	25	sport		K	
+F	19	lap	26	event_group		K	
+F	19	lap	32	num_lengths	lengths	K	
+F	19	lap	33	normalized_power	watts	R	power
+F	19	lap	34	left_right_balance		R	pedalling dynamics (balance, torque, smoothness, platform offset, power phase)
+F	19	lap	35	first_length_index		K	
+F	19	lap	37	avg_stroke_distance	m	R	swimming / stroke data
+F	19	lap	38	swim_stroke		R	swimming / stroke data
+F	19	lap	39	sub_sport		K	
+F	19	lap	40	num_active_lengths	lengths	K	
+F	19	lap	41	total_work	J	R	work (energy)
+F	19	lap	42	avg_altitude	m	K	
+F	19	lap	43	max_altitude	m	K	
+F	19	lap	44	gps_accuracy	m	K	
+F	19	lap	45	avg_grade	%	K	
+F	19	lap	46	avg_pos_grade	%	K	
+F	19	lap	47	avg_neg_grade	%	K	
+F	19	lap	48	max_pos_grade	%	K	
+F	19	lap	49	max_neg_grade	%	K	
+F	19	lap	50	avg_temperature	C	K	
+F	19	lap	51	max_temperature	C	K	
+F	19	lap	52	total_moving_time	s	K	
+F	19	lap	53	avg_pos_vertical_speed	m/s	K	
+F	19	lap	54	avg_neg_vertical_speed	m/s	K	
+F	19	lap	55	max_pos_vertical_speed	m/s	K	
+F	19	lap	56	max_neg_vertical_speed	m/s	K	
+F	19	lap	57	time_in_hr_zone	s	R	time in zone (heart rate / cadence / power / speed zones)
+F	19	lap	58	time_in_speed_zone	s	R	time in zone (heart rate / cadence / power / speed zones)
+F	19	lap	59	time_in_cadence_zone	s	R	time in zone (heart rate / cadence / power / speed zones)
+F	19	lap	60	time_in_power_zone	s	R	time in zone (heart rate / cadence / power / speed zones)
+F	19	lap	61	repetition_num		K	
+F	19	lap	62	min_altitude	m	K	
+F	19	lap	63	min_heart_rate	bpm	R	heart rate
+F	19	lap	71	wkt_step_index		K	
+F	19	lap	74	opponent_score		R	ball-sport data, not a ride field
+F	19	lap	75	stroke_count	counts	R	swimming / stroke data
+F	19	lap	76	zone_count	counts	R	time in zone (heart rate / cadence / power / speed zones)
+F	19	lap	77	avg_vertical_oscillation	mm	R	running dynamics
+F	19	lap	78	avg_stance_time_percent	percent	R	running dynamics
+F	19	lap	79	avg_stance_time	ms	R	running dynamics
+F	19	lap	80	avg_fractional_cadence	rpm	R	cadence / cycle / stroke count
+F	19	lap	81	max_fractional_cadence	rpm	R	cadence / cycle / stroke count
+F	19	lap	82	total_fractional_cycles	cycles	R	cadence / cycle / stroke count
+F	19	lap	83	player_score		R	ball-sport data, not a ride field
+F	19	lap	84	avg_total_hemoglobin_conc	g/dL	R	muscle oxygen (tHb / SmO2)
+F	19	lap	85	min_total_hemoglobin_conc	g/dL	R	muscle oxygen (tHb / SmO2)
+F	19	lap	86	max_total_hemoglobin_conc	g/dL	R	muscle oxygen (tHb / SmO2)
+F	19	lap	87	avg_saturated_hemoglobin_percent	%	R	muscle oxygen (tHb / SmO2)
+F	19	lap	88	min_saturated_hemoglobin_percent	%	R	muscle oxygen (tHb / SmO2)
+F	19	lap	89	max_saturated_hemoglobin_percent	%	R	muscle oxygen (tHb / SmO2)
+F	19	lap	91	avg_left_torque_effectiveness	percent	R	pedalling dynamics (balance, torque, smoothness, platform offset, power phase)
+F	19	lap	92	avg_right_torque_effectiveness	percent	R	pedalling dynamics (balance, torque, smoothness, platform offset, power phase)
+F	19	lap	93	avg_left_pedal_smoothness	percent	R	pedalling dynamics (balance, torque, smoothness, platform offset, power phase)
+F	19	lap	94	avg_right_pedal_smoothness	percent	R	pedalling dynamics (balance, torque, smoothness, platform offset, power phase)
+F	19	lap	95	avg_combined_pedal_smoothness	percent	R	pedalling dynamics (balance, torque, smoothness, platform offset, power phase)
+F	19	lap	98	time_standing	s	R	rider posture (standing time/count)
+F	19	lap	99	stand_count		R	rider posture (standing time/count)
+F	19	lap	100	avg_left_pco	mm	R	pedalling dynamics (balance, torque, smoothness, platform offset, power phase)
+F	19	lap	101	avg_right_pco	mm	R	pedalling dynamics (balance, torque, smoothness, platform offset, power phase)
+F	19	lap	102	avg_left_power_phase	degrees	R	pedalling dynamics (balance, torque, smoothness, platform offset, power phase)
+F	19	lap	103	avg_left_power_phase_peak	degrees	R	pedalling dynamics (balance, torque, smoothness, platform offset, power phase)
+F	19	lap	104	avg_right_power_phase	degrees	R	pedalling dynamics (balance, torque, smoothness, platform offset, power phase)
+F	19	lap	105	avg_right_power_phase_peak	degrees	R	pedalling dynamics (balance, torque, smoothness, platform offset, power phase)
+F	19	lap	106	avg_power_position	watts	R	power
+F	19	lap	107	max_power_position	watts	R	power
+F	19	lap	108	avg_cadence_position	rpm	R	cadence / cycle / stroke count
+F	19	lap	109	max_cadence_position	rpm	R	cadence / cycle / stroke count
+F	19	lap	110	enhanced_avg_speed	m/s	K	
+F	19	lap	111	enhanced_max_speed	m/s	K	
+F	19	lap	112	enhanced_avg_altitude	m	K	
+F	19	lap	113	enhanced_min_altitude	m	K	
+F	19	lap	114	enhanced_max_altitude	m	K	
+F	19	lap	115	avg_lev_motor_power	watts	R	e-bike motor power
+F	19	lap	116	max_lev_motor_power	watts	R	e-bike motor power
+F	19	lap	117	lev_battery_consumption	percent	K	
+F	19	lap	118	avg_vertical_ratio	percent	R	running dynamics
+F	19	lap	119	avg_stance_time_balance	percent	R	pedalling dynamics (balance, torque, smoothness, platform offset, power phase)
+F	19	lap	120	avg_step_length	mm	R	running dynamics
+F	19	lap	121	avg_vam	m/s	K	ascent speed from altitude and time
+F	19	lap	122	avg_depth	m	R	dive data, not a ride field
+F	19	lap	123	max_depth	m	R	dive data, not a ride field
+F	19	lap	124	min_temperature	C	K	
+F	19	lap	136	enhanced_avg_respiration_rate	Breaths/min	R	respiration / dive physiology
+F	19	lap	137	enhanced_max_respiration_rate	Breaths/min	R	respiration / dive physiology
+F	19	lap	147	avg_respiration_rate		R	respiration / dive physiology
+F	19	lap	148	max_respiration_rate		R	respiration / dive physiology
+F	19	lap	149	total_grit	kGrit	K	MTB terrain metric
+F	19	lap	150	total_flow	Flow	K	MTB terrain metric
+F	19	lap	151	jump_count		K	jump count from motion on the bike, not a body value
+F	19	lap	153	avg_grit	kGrit	K	MTB terrain metric
+F	19	lap	154	avg_flow	Flow	K	MTB terrain metric
+F	19	lap	156	total_fractional_ascent	m	K	
+F	19	lap	157	total_fractional_descent	m	K	
+F	19	lap	158	avg_core_temperature	C	R	core body temperature
+F	19	lap	159	min_core_temperature	C	R	core body temperature
+F	19	lap	160	max_core_temperature	C	R	core body temperature
+M	101	length				K	kept (filtered per field)
+F	101	length	254	message_index		K	
+F	101	length	253	timestamp		K	
+F	101	length	0	event		K	
+F	101	length	1	event_type		K	
+F	101	length	2	start_time		K	
+F	101	length	3	total_elapsed_time	s	K	
+F	101	length	4	total_timer_time	s	K	
+F	101	length	5	total_strokes	strokes	R	cadence / cycle / stroke count
+F	101	length	6	avg_speed	m/s	K	
+F	101	length	7	swim_stroke	swim_stroke	R	swimming / stroke data
+F	101	length	9	avg_swimming_cadence	strokes/min	R	swimming / stroke data
+F	101	length	10	event_group		K	
+F	101	length	11	total_calories	kcal	R	calories
+F	101	length	12	length_type		K	
+F	101	length	18	player_score		R	ball-sport data, not a ride field
+F	101	length	19	opponent_score		R	ball-sport data, not a ride field
+F	101	length	20	stroke_count	counts	R	swimming / stroke data
+F	101	length	21	zone_count	counts	R	time in zone (heart rate / cadence / power / speed zones)
+F	101	length	22	enhanced_avg_respiration_rate	Breaths/min	R	respiration / dive physiology
+F	101	length	23	enhanced_max_respiration_rate	Breaths/min	R	respiration / dive physiology
+F	101	length	24	avg_respiration_rate		R	respiration / dive physiology
+F	101	length	25	max_respiration_rate		R	respiration / dive physiology
+M	20	record				K	kept (filtered per field)
+F	20	record	253	timestamp	s	K	
+F	20	record	0	position_lat	semicircles	K	
+F	20	record	1	position_long	semicircles	K	
+F	20	record	2	altitude	m	K	
+F	20	record	3	heart_rate	bpm	R	heart rate
+F	20	record	4	cadence	rpm	R	cadence / cycle / stroke count
+F	20	record	5	distance	m	K	
+F	20	record	6	speed	m/s	K	
+F	20	record	7	power	watts	R	power
+F	20	record	8	compressed_speed_distance		K	
+F	20	record	9	grade	%	K	
+F	20	record	10	resistance		R	trainer resistance setting (proxy of power)
+F	20	record	11	time_from_course	s	K	course navigation
+F	20	record	12	cycle_length	m	R	step / stroke length
+F	20	record	13	temperature	C	K	ambient temperature (owner rule: kept)
+F	20	record	17	speed_1s	m/s	K	
+F	20	record	18	cycles	cycles	R	cadence / cycle / stroke count
+F	20	record	19	total_cycles	cycles	R	cadence / cycle / stroke count
+F	20	record	28	compressed_accumulated_power	watts	R	power
+F	20	record	29	accumulated_power	watts	R	power
+F	20	record	30	left_right_balance		R	pedalling dynamics (balance, torque, smoothness, platform offset, power phase)
+F	20	record	31	gps_accuracy	m	K	GPS accuracy
+F	20	record	32	vertical_speed	m/s	K	climb rate from altitude
+F	20	record	33	calories	kcal	R	calories
+F	20	record	39	vertical_oscillation	mm	R	running dynamics
+F	20	record	40	stance_time_percent	percent	R	running dynamics
+F	20	record	41	stance_time	ms	R	running dynamics
+F	20	record	42	activity_type		K	generic activity type, no sensor value
+F	20	record	43	left_torque_effectiveness	percent	R	pedalling dynamics (balance, torque, smoothness, platform offset, power phase)
+F	20	record	44	right_torque_effectiveness	percent	R	pedalling dynamics (balance, torque, smoothness, platform offset, power phase)
+F	20	record	45	left_pedal_smoothness	percent	R	pedalling dynamics (balance, torque, smoothness, platform offset, power phase)
+F	20	record	46	right_pedal_smoothness	percent	R	pedalling dynamics (balance, torque, smoothness, platform offset, power phase)
+F	20	record	47	combined_pedal_smoothness	percent	R	pedalling dynamics (balance, torque, smoothness, platform offset, power phase)
+F	20	record	48	time128	s	K	
+F	20	record	49	stroke_type		R	swimming / stroke data
+F	20	record	50	zone		R	time in zone (heart rate / cadence / power / speed zones)
+F	20	record	51	ball_speed	m/s	R	ball-sport data, not a ride field
+F	20	record	52	cadence256	rpm	R	cadence / cycle / stroke count
+F	20	record	53	fractional_cadence	rpm	R	cadence / cycle / stroke count
+F	20	record	54	total_hemoglobin_conc	g/dL	R	muscle oxygen (tHb / SmO2)
+F	20	record	55	total_hemoglobin_conc_min	g/dL	R	muscle oxygen (tHb / SmO2)
+F	20	record	56	total_hemoglobin_conc_max	g/dL	R	muscle oxygen (tHb / SmO2)
+F	20	record	57	saturated_hemoglobin_percent	%	R	muscle oxygen (tHb / SmO2)
+F	20	record	58	saturated_hemoglobin_percent_min	%	R	muscle oxygen (tHb / SmO2)
+F	20	record	59	saturated_hemoglobin_percent_max	%	R	muscle oxygen (tHb / SmO2)
+F	20	record	62	device_index		K	
+F	20	record	67	left_pco	mm	R	pedalling dynamics (balance, torque, smoothness, platform offset, power phase)
+F	20	record	68	right_pco	mm	R	pedalling dynamics (balance, torque, smoothness, platform offset, power phase)
+F	20	record	69	left_power_phase	degrees	R	pedalling dynamics (balance, torque, smoothness, platform offset, power phase)
+F	20	record	70	left_power_phase_peak	degrees	R	pedalling dynamics (balance, torque, smoothness, platform offset, power phase)
+F	20	record	71	right_power_phase	degrees	R	pedalling dynamics (balance, torque, smoothness, platform offset, power phase)
+F	20	record	72	right_power_phase_peak	degrees	R	pedalling dynamics (balance, torque, smoothness, platform offset, power phase)
+F	20	record	73	enhanced_speed	m/s	K	
+F	20	record	78	enhanced_altitude	m	K	
+F	20	record	81	battery_soc	percent	K	vehicle/device battery state of charge
+F	20	record	82	motor_power	watts	R	e-bike motor power
+F	20	record	83	vertical_ratio	percent	R	running dynamics
+F	20	record	84	stance_time_balance	percent	R	pedalling dynamics (balance, torque, smoothness, platform offset, power phase)
+F	20	record	85	step_length	mm	R	running dynamics
+F	20	record	87	cycle_length16	m	R	step / stroke length
+F	20	record	91	absolute_pressure	Pa	K	ambient air pressure
+F	20	record	92	depth	m	R	dive data, not a ride field
+F	20	record	93	next_stop_depth	m	R	dive data, not a ride field
+F	20	record	94	next_stop_time	s	R	dive data, not a ride field
+F	20	record	95	time_to_surface	s	R	dive data, not a ride field
+F	20	record	96	ndl_time	s	R	dive data, not a ride field
+F	20	record	97	cns_load	percent	R	respiration / dive physiology
+F	20	record	98	n2_load	percent	R	respiration / dive physiology
+F	20	record	99	respiration_rate	s	R	respiration / dive physiology
+F	20	record	108	enhanced_respiration_rate	Breaths/min	R	respiration / dive physiology
+F	20	record	114	grit		K	MTB terrain metric from the course, not a body value
+F	20	record	115	flow		K	MTB terrain metric from the course, not a body value
+F	20	record	116	current_stress		R	stress
+F	20	record	117	ebike_travel_range	km	K	e-bike state (range), not rider output
+F	20	record	118	ebike_battery_level	percent	K	e-bike battery, device state
+F	20	record	119	ebike_assist_mode	depends on sensor	K	e-bike assist mode, device setting
+F	20	record	120	ebike_assist_level_percent	percent	K	e-bike assist level, device setting
+F	20	record	123	air_time_remaining	s	R	dive data, not a ride field
+F	20	record	124	pressure_sac	bar/min	R	respiration / dive physiology
+F	20	record	125	volume_sac	L/min	R	respiration / dive physiology
+F	20	record	126	rmv	L/min	R	respiration / dive physiology
+F	20	record	127	ascent_rate	m/s	K	climb rate from altitude
+F	20	record	129	po2	percent	R	respiration / dive physiology
+F	20	record	139	core_temperature	C	R	core body temperature
+M	21	event				K	kept (filtered per field)
+F	21	event	253	timestamp	s	K	
+F	21	event	0	event		K	
+F	21	event	1	event_type		K	
+F	21	event	2	data16		K	same as data
+F	21	event	3	data		K	event data: only read for allowed events (see event list), so alert thresholds never pass
+F	21	event	4	event_group		K	
+F	21	event	7	score		R	ball-sport data, not a ride field
+F	21	event	8	opponent_score		R	ball-sport data, not a ride field
+F	21	event	9	front_gear_num		K	gear (bike state)
+F	21	event	10	front_gear		K	gear (bike state)
+F	21	event	11	rear_gear_num		K	gear (bike state)
+F	21	event	12	rear_gear		K	gear (bike state)
+F	21	event	13	device_index		K	
+F	21	event	14	activity_type		K	
+F	21	event	15	start_timestamp	s	K	
+F	21	event	21	radar_threat_level_max		K	external radar (traffic), not the rider
+F	21	event	22	radar_threat_count		K	external radar (traffic), not the rider
+F	21	event	23	radar_threat_avg_approach_speed	m/s	K	external radar (traffic), not the rider
+F	21	event	24	radar_threat_max_approach_speed	m/s	K	external radar (traffic), not the rider
+M	23	device_info				K	kept (no health fields)
+F	23	device_info	253	timestamp	s	K	
+F	23	device_info	0	device_index		K	
+F	23	device_info	1	device_type		K	
+F	23	device_info	2	manufacturer		K	
+F	23	device_info	3	serial_number		K	
+F	23	device_info	4	product		K	
+F	23	device_info	5	software_version		K	
+F	23	device_info	6	hardware_version		K	
+F	23	device_info	7	cum_operating_time	s	K	device operating time
+F	23	device_info	10	battery_voltage	V	K	sensor battery (battery model input)
+F	23	device_info	11	battery_status		K	sensor battery
+F	23	device_info	18	sensor_position		K	where the sensor sits; describes the device, no value
+F	23	device_info	19	descriptor		K	
+F	23	device_info	20	ant_transmission_type		K	
+F	23	device_info	21	ant_device_number		K	
+F	23	device_info	22	ant_network		K	
+F	23	device_info	25	source_type		K	
+F	23	device_info	27	product_name		K	
+F	23	device_info	32	battery_level	%	K	sensor battery
+M	375	device_aux_battery_info				K	kept (no health fields)
+F	375	device_aux_battery_info	253	timestamp		K	
+F	375	device_aux_battery_info	0	device_index		K	
+F	375	device_aux_battery_info	1	battery_voltage	V	K	
+F	375	device_aux_battery_info	2	battery_status		K	
+F	375	device_aux_battery_info	3	battery_identifier		K	
+M	72	training_file				R	training file
+M	128	weather_conditions				R	weather conditions (not needed; observation place name)
+M	129	weather_alert				R	weather alert
+M	160	gps_metadata				K	kept (no health fields)
+F	160	gps_metadata	253	timestamp	s	K	
+F	160	gps_metadata	0	timestamp_ms	ms	K	
+F	160	gps_metadata	1	position_lat	semicircles	K	
+F	160	gps_metadata	2	position_long	semicircles	K	
+F	160	gps_metadata	3	enhanced_altitude	m	K	
+F	160	gps_metadata	4	enhanced_speed	m/s	K	
+F	160	gps_metadata	5	heading	degrees	K	
+F	160	gps_metadata	6	utc_timestamp	s	K	
+F	160	gps_metadata	7	velocity	m/s	K	
+M	161	camera_event				R	camera event
+M	164	gyroscope_data				R	gyroscope data (body motion)
+M	165	accelerometer_data				R	accelerometer data (body motion)
+M	208	magnetometer_data				R	magnetometer data (body motion)
+M	209	barometer_data				R	barometer data (not needed)
+M	167	three_d_sensor_calibration				R	3d sensor calibration
+M	210	one_d_sensor_calibration				R	1d sensor calibration
+M	169	video_frame				R	video frame
+M	174	obdii_data				R	OBD-II data
+M	177	nmea_sentence				R	NMEA sentence
+M	178	aviation_attitude				R	aviation attitude
+M	184	video				R	video
+M	185	video_title				R	video title
+M	186	video_description				R	video description
+M	187	video_clip				R	video clip
+M	225	set				R	set (strength training: repetitions, weight)
+M	285	jump				R	jump (not needed)
+M	312	split				R	split (not needed)
+M	313	split_summary				R	split summary: avg/max heart rate
+M	317	climb_pro				R	climb pro (not needed)
+M	206	field_description				R	developer field description (all developer data goes)
+M	207	developer_data_id				R	developer data id (all developer data goes)
+M	31	course				K	kept (no health fields)
+F	31	course	4	sport		K	
+F	31	course	5	name		K	
+F	31	course	6	capabilities		K	
+F	31	course	7	sub_sport		K	
+M	32	course_point				K	kept (no health fields)
+F	32	course_point	254	message_index		K	
+F	32	course_point	1	timestamp		K	
+F	32	course_point	2	position_lat	semicircles	K	
+F	32	course_point	3	position_long	semicircles	K	
+F	32	course_point	4	distance	m	K	
+F	32	course_point	5	type		K	
+F	32	course_point	6	name		K	
+F	32	course_point	8	favorite		K	
+M	148	segment_id				R	segment id (not needed)
+M	149	segment_leaderboard_entry				R	segment leaderboard (other riders)
+M	150	segment_point				K	kept (no health fields)
+F	150	segment_point	254	message_index		K	
+F	150	segment_point	1	position_lat	semicircles	K	
+F	150	segment_point	2	position_long	semicircles	K	
+F	150	segment_point	3	distance	m	K	
+F	150	segment_point	4	altitude	m	K	
+F	150	segment_point	5	leader_time	s	K	
+F	150	segment_point	6	enhanced_altitude	m	K	
+M	142	segment_lap				R	segment lap: avg/max heart rate, cadence, power, zones
+M	151	segment_file				R	segment file
+M	26	workout				R	workout (HR / power targets)
+M	158	workout_session				R	workout session
+M	27	workout_step				R	workout step (HR / power / cadence targets)
+M	264	exercise_title				R	exercise title
+M	28	schedule				R	workout schedule
+M	33	totals				R	totals: calories
+M	30	weight_scale				R	weight scale: weight, body fat, hydration, muscle/bone mass
+M	51	blood_pressure				R	blood pressure
+M	103	monitoring_info				R	monitoring info
+M	55	monitoring				R	monitoring: heart rate, calories, cycles
+M	211	monitoring_hr_data				R	monitoring heart rate data
+M	269	spo2_data				R	SpO2 data
+M	132	hr				R	hr: heart rate
+M	227	stress_level				R	stress level
+M	229	max_met_data				R	max MET: VO2 max estimate
+M	314	hsa_body_battery_data				R	HSA body battery
+M	315	hsa_event				R	HSA event
+M	302	hsa_accelerometer_data				R	HSA accelerometer data (body motion)
+M	376	hsa_gyroscope_data				R	HSA gyroscope data (body motion)
+M	304	hsa_step_data				R	HSA step data
+M	305	hsa_spo2_data				R	HSA SpO2
+M	306	hsa_stress_data				R	HSA stress
+M	307	hsa_respiration_data				R	HSA respiration
+M	308	hsa_heart_rate_data				R	HSA heart rate
+M	389	hsa_configuration_data				R	HSA configuration
+M	409	hsa_wrist_temperature_data				R	HSA wrist temperature
+M	145	memo_glob				R	memo glob (free text)
+M	275	sleep_level				R	sleep level
+M	82	ant_channel_id				R	ANT channel id (radio configuration, not needed)
+M	80	ant_rx				R	raw ANT receive payload (can carry sensor data)
+M	81	ant_tx				R	raw ANT transmit payload
+M	200	exd_screen_configuration				R	EXD screen configuration (data fields shown, HR/power)
+M	201	exd_data_field_configuration				R	EXD data field configuration
+M	202	exd_data_concept_configuration				R	EXD data concept configuration
+M	268	dive_summary				R	dive summary
+M	289	aad_accel_features				R	accelerometer features (body motion)
+M	78	hrv				R	hrv: beat to beat intervals
+M	290	beat_intervals				R	beat intervals (HRV)
+M	370	hrv_status_summary				R	HRV status summary
+M	371	hrv_value				R	HRV value
+M	372	raw_bbi				R	raw beat to beat intervals
+M	297	respiration_rate				R	respiration rate
+M	387	chrono_shot_session				R	chrono shot session
+M	388	chrono_shot_data				R	chrono shot data
+M	319	tank_update				R	tank update
+M	323	tank_summary				R	tank summary
+M	346	sleep_assessment				R	sleep assessment
+M	398	skin_temp_overnight				R	skin temperature overnight
+M	105	pad				R	pad
+E	21	event	0	timer		K	timer start / stop (pauses)
+E	21	event	3	workout		K	workout start / stop marker
+E	21	event	4	workout_step		K	workout step marker
+E	21	event	5	power_down		K	device power down
+E	21	event	6	power_up		K	device power up
+E	21	event	7	off_course		K	off course
+E	21	event	8	session		K	session start / stop
+E	21	event	9	lap		K	lap start / stop
+E	21	event	10	course_point		K	course point marker
+E	21	event	11	battery		K	battery marker
+E	21	event	12	virtual_partner_pace		K	virtual partner pace (speed)
+E	21	event	13	hr_high_alert		R	heart rate alert (data = heart rate threshold)
+E	21	event	14	hr_low_alert		R	heart rate alert (data = heart rate threshold)
+E	21	event	15	speed_high_alert		K	speed alert (speed threshold)
+E	21	event	16	speed_low_alert		K	speed alert (speed threshold)
+E	21	event	17	cad_high_alert		R	cadence alert (data = cadence threshold)
+E	21	event	18	cad_low_alert		R	cadence alert (data = cadence threshold)
+E	21	event	19	power_high_alert		R	power alert (data = power threshold)
+E	21	event	20	power_low_alert		R	power alert (data = power threshold)
+E	21	event	21	recovery_hr		R	recovery heart rate (data = heart rate)
+E	21	event	22	battery_low		K	battery low
+E	21	event	23	time_duration_alert		K	time duration alert
+E	21	event	24	distance_duration_alert		K	distance duration alert
+E	21	event	25	calorie_duration_alert		R	calorie duration alert
+E	21	event	26	activity		K	activity start / stop
+E	21	event	27	fitness_equipment		K	fitness equipment state
+E	21	event	28	length		K	length
+E	21	event	32	user_marker		K	user marker
+E	21	event	33	sport_point		R	sport point (scores)
+E	21	event	36	calibration		K	calibration
+E	21	event	42	front_gear_change		K	front gear change
+E	21	event	43	rear_gear_change		K	rear gear change
+E	21	event	44	rider_position_change		R	rider position change (standing / seated posture)
+E	21	event	45	elev_high_alert		K	elevation alert
+E	21	event	46	elev_low_alert		K	elevation alert
+E	21	event	47	comm_timeout		K	comm timeout
+E	21	event	54	auto_activity_detect		K	auto activity detect
+E	21	event	56	dive_alert		R	dive event
+E	21	event	57	dive_gas_switched		R	dive event
+E	21	event	71	tank_pressure_reserve		R	dive event
+E	21	event	72	tank_pressure_critical		R	dive event
+E	21	event	73	tank_lost		R	dive event
+E	21	event	75	radar_threat_alert		K	radar threat alert (traffic)
+E	21	event	76	tank_battery_low		R	dive event
+E	21	event	81	tank_pod_connected		R	dive event
+E	21	event	82	tank_pod_disconnected		R	dive event
