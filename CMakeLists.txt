@@ -37,6 +37,7 @@ set(APP_SOURCES
     src/tcx_parser.cpp
     src/fit_writer.cpp
     src/health_stripper.cpp
+    src/fit_validator.cpp
 )
 
 # Create fit-parser executable
@@ -51,6 +52,7 @@ set(STRIPPER_SOURCES
     src/fit_writer.cpp
     src/gpx_parser.cpp
     src/tcx_parser.cpp
+    src/fit_validator.cpp
 )
 add_executable(gps-stripper ${STRIPPER_SOURCES} ${FIT_SDK_SOURCES})
 target_link_libraries(gps-stripper PRIVATE pugixml::pugixml)

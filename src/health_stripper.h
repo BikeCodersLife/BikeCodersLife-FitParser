@@ -18,14 +18,13 @@ struct HealthStripStats {
  * Removes health data (heart rate, power, cadence and every other
  * physiological or biomechanical value) and ALL developer data from a FIT file.
  *
- * The FIT is decoded with the Garmin SDK and re-encoded message by message in
- * the original order, so the output is always a valid FIT (header and CRC
+ * The FIT bytes are rewritten message by message in the original order (definitions
+ * reduced to the kept fields), so the output is always a valid FIT (header and CRCs
  * rebuilt). The decision table lives in docs/health-strip-table.tsv and is
  * compiled into src/health_table.inc (see docs/health-strip.md).
  *
- * Two paths: a linear byte-level rewriter (default, ~30 MB/s) and the SDK
- * decode/encode (only for files with compressed-timestamp headers). Both use
- * the same table.
+ * A linear byte-level rewriter (~100 MB/s); the vendor SDK decoder is not used.
+ * Compressed-timestamp headers are expanded to full timestamps.
  *
  * Fails closed: anything that cannot be decoded or cleaned throws, and the
  * caller must not use any output.
