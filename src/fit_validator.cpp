@@ -10,7 +10,7 @@ namespace {
 
 // Validates ONE FIT file at d (n bytes available). On success `consumed` is its full length
 // (header + data + CRC). dataSize 0 in the header means "records run to the CRC at the end of the input".
-std::string validateChunk(const unsigned char* d, std::size_t n, std::size_t& consumed) {
+std::string validateChunk(const unsigned char* d, std::size_t n, std::size_t& consumed, bool first) {
     if (n < 14) return "file too short";
     const std::size_t hdr = d[0];
     if (hdr != 12 && hdr != 14) return "bad header size";
@@ -20,6 +20,7 @@ std::string validateChunk(const unsigned char* d, std::size_t n, std::size_t& co
         | (static_cast<uint32_t>(d[6]) << 16) | (static_cast<uint32_t>(d[7]) << 24);
     std::size_t end;
     if (dataSize == 0) {
+        if (!first) return "data size 0";
         end = n - 2; // header without data size: records run to the CRC
     } else {
         if (static_cast<uint64_t>(hdr) + dataSize + 2 > n) return "truncated file";
@@ -81,23 +82,18 @@ std::string validateChunk(const unsigned char* d, std::size_t n, std::size_t& co
     return std::string();
 }
 
-// Does a FIT file header start here? (header size 12/14 and the ".FIT" tag)
-bool looksLikeHeader(const unsigned char* d, std::size_t n) {
-    return n >= 12 && (d[0] == 12 || d[0] == 14) && d[8] == '.' && d[9] == 'F' && d[10] == 'I' && d[11] == 'T';
-}
-
 } // namespace
 
 std::string validateFitStructure(const unsigned char* d, std::size_t n) {
     // Every chained FIT file in the input is validated: the vendor decoder reads them all.
     std::size_t pos = 0;
     while (pos < n) {
-        // After the first file: bytes that do not start like a FIT header (padding, junk) are
-        // ignored, the same as the strip mode ignores them. A header-like start must be a complete,
-        // valid file; a truncated or damaged chained file is refused, never skipped.
-        if (pos > 0 && !looksLikeHeader(d + pos, n - pos)) break;
+        // The vendor decoder (Decode::Read) starts decoding a new file at EVERY byte that follows a
+        // file: header size >= 12 (any value up to 255!), protocol major <= 2, ".FIT" tag, and so on.
+        // So no tail is ignored: whatever follows the first file must itself be a complete, valid
+        // FIT file under the strict rules (header size 12 or 14), otherwise the input is refused.
         std::size_t used = 0;
-        const std::string reason = validateChunk(d + pos, n - pos, used);
+        const std::string reason = validateChunk(d + pos, n - pos, used, pos == 0);
         if (!reason.empty()) return pos == 0 ? reason : "chained file at byte " + std::to_string(pos) + ": " + reason;
         pos += used;
     }

@@ -17,9 +17,10 @@
  *   - field size 0, size not a multiple of the base type size, base type number >= 17
  *   - duplicate field numbers inside one definition, developer field size 0
  *   - a record stream that does not end exactly at the data size
- * Bytes after a file that do not start like a FIT header (padding, junk) are ignored, as the
- * strip mode ignores them; a header-like start must be a complete valid file (truncated or
- * damaged chained files are refused, never skipped).
+ * No tail is ignored: Decode::Read starts decoding a new file at every byte after a file (any
+ * header size >= 12), so whatever follows the first file must itself be a complete valid FIT
+ * file (header size 12/14), else the input is refused. (The strip mode drops such tails and
+ * reports them instead; it never hands them to the SDK.)
  * The CRC is not checked here (the SDK and the strip mode do that themselves).
  */
 

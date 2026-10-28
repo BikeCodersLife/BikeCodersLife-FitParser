@@ -799,11 +799,26 @@ assert 21 * n < $outsz < 21 * n + 200, ($outsz, 21 * n)
             fail "$(basename "$bad"): strip rc=$rc1 (want $want1), parse rc=$rc2 (want 1), gps rc=$gps_rc (want 1): $(head -1 "$TMP_DIR/err1.txt") / $(head -1 "$TMP_DIR/err2.txt")"
         fi
     done
+    # every header size byte (0-255) on a hostile second chunk: parse and gps-stripper exit exactly 1 (never a crash)
+    mkdir -p "$TMP_DIR/hs"
+    python3 "$CHECK_PY" mkraw chain-headersizes "$TMP_DIR/hs"
+    TOTAL=$((TOTAL + 1))
+    hs_bad=""
+    for f in "$TMP_DIR"/hs/hs*.fit; do
+        rc=0; "$PARSER" "$f" > /dev/null 2>&1 || rc=$?
+        grc=0; [ -x "$GPS_STRIPPER" ] && { "$GPS_STRIPPER" "$f" "$TMP_DIR/hs-gps.fit" 100 100 > /dev/null 2>&1 || grc=$?; }
+        [ $rc -eq 1 ] && [ $grc -eq 1 ] || hs_bad="$hs_bad $(basename "$f")(parse=$rc,gps=$grc)"
+    done
+    if [ -z "$hs_bad" ]; then
+        pass "hostile second chunk with every header size 0-255: parse and gps-stripper exit 1 (256 files)"
+    else
+        fail "header size variants not refused with exit 1:$hs_bad"
+    fi
     # a valid file followed by padding is fine (strip drops it, parse accepts it)
     TOTAL=$((TOTAL + 1))
     python3 "$CHECK_PY" mkraw chain-junk-ok "$TMP_DIR/chainjunk.fit"
     if "$PARSER" "$TMP_DIR/chainjunk.fit" --strip-health "$TMP_DIR/chainjunk-out.fit" 2>/dev/null | grep -q '"trailingBytesDropped": 8'; then
-        pass "valid file + 8 padding bytes: strip drops and reports them (the validator ignores non-header bytes)"
+        pass "valid file + 8 padding bytes: strip drops and reports them"
     else
         fail "valid file + padding handled wrongly"
     fi

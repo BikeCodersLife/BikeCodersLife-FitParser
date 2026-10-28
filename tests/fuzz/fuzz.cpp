@@ -6,7 +6,9 @@
 // definition counts, architecture byte, header-type bits incl. compressed and
 // developer flags, insert/delete, truncation, trailing junk). About 30% of the inputs are
 // CHAINS of 2-3 FIT files (valid and mutated parts, any order, each part with its own
-// fixed up sizes and CRCs), because the vendor decoder reads every chained file.
+// fixed up sizes and CRCs), because the vendor decoder reads every chained file; in 40% of
+// the chained parts after the first the header size byte (and sometimes the protocol byte and
+// the .FIT tag) is replaced.
 // 90% of the inputs get the header size and both CRCs fixed up, so the structure
 // code behind the CRC check is reached. For every input:
 //   1. HealthStripper::stripBytes must either throw or return bytes that an
@@ -190,6 +192,12 @@ int main(int argc, char** argv) {
             for (int k = 0; k < parts; k++) {
                 S part = seeds[r() % seeds.size()];
                 if (r() % 10 < 4) { mutate(part); if (r() % 10 < 9) fixup(part, r); }
+                if (k > 0 && r() % 10 < 4 && part.size() > 12) {
+                    // header of a chained chunk: any header size byte, bytes 8-11 sometimes kept as .FIT, sometimes random
+                    part[0] = (char)(r() % 2 ? r() % 256 : 12 + r() % 20);
+                    if (r() % 3 == 0) part[8 + r() % 4] = (char)r();
+                    if (r() % 2) part[1] = (char)r();
+                }
                 b += part;
             }
         } else {

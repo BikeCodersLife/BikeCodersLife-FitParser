@@ -156,6 +156,16 @@ def make_raw(kind, out, n):
         for i in range(4):
             d += bytes([1]) + struct.pack("<IiiBB", T0 + i, 626000000 + i * 1000, 60000000 + i * 1500, 140, 99)
             d += bytes([2]) + struct.pack("<BH", 7, 4242)
+    elif kind == "chain-headersizes":
+        # out is a directory: one file per header size byte 0..255 of the second chunk (".FIT" tag kept)
+        good = FILE_ID + definition(1, 20, [(253, 4, U32), (0, 4, S32)]) + bytes([1]) + struct.pack("<Ii", T0, 626000000)
+        bad = FILE_ID + definition(1, 20, [(253, 4, U32), (0, 4, 0x1F)]) + bytes([1]) + struct.pack("<II", T0, 1)
+        for hs in range(256):
+            c = bytearray(frame(bad))
+            c[0] = hs
+            with open(os.path.join(out, "hs%03d.fit" % hs), "wb") as f:
+                f.write(frame(good) + bytes(c))
+        return
     elif kind in ("chain-badbase", "chain-truncated", "chain-junk-ok"):
         good = FILE_ID + definition(1, 20, [(253, 4, U32), (0, 4, S32)]) + bytes([1]) + struct.pack("<Ii", T0, 626000000)
         bad = FILE_ID + definition(1, 20, [(253, 4, U32), (0, 4, 0x1F)]) + bytes([1]) + struct.pack("<II", T0, 1)
