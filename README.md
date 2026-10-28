@@ -105,7 +105,7 @@ gps-stripper ride.fit stripped_ride.fit 2000 2000
 ```bash
 # FIT, GPX or TCX in, a FIT without health data out
 fit-parser ride.fit --strip-health clean.fit
-# stdout: {"droppedMessages": 497, "strippedFields": 107718, "developerFieldsRemoved": 25295}
+# stdout: {"droppedMessages": 497, "strippedFields": 107718, "developerFieldsRemoved": 25295, "trailingBytesDropped": 0}
 ```
 
 For riders who turned "health data" off: the file is decoded with the FIT SDK and
@@ -128,7 +128,18 @@ FIT) gives a non-zero exit and **no output file**; the output is written under a
 temporary name and renamed only on success. GPX/TCX input is converted to FIT
 first and then goes through the same filter, so every source ends up behind one
 filter. A FIT holding several chained files has each of them cleaned; bytes after
-the last valid file are not copied.
+the last valid file (junk, padding, a damaged chained file) are not copied, are
+counted in `trailingBytesDropped` and reported on stderr.
+
+Speed: a linear byte-level rewrite driven by the same table (a 34 MB FIT takes
+about 0.35 s, peak memory under 3x the file size). Files with compressed-timestamp
+headers take the slower SDK decode/encode path (~1 MB/s), where a message cannot
+simply be cut out of the byte stream.
+
+Callers: pass a fresh output path. An existing file is replaced only on success
+and is never deleted on failure. Handled failures remove the temporary files
+(`<out>.tmp.<pid>`, `<out>.conv.<pid>`), but a SIGKILL (for instance the 30 s CPU
+limit) cannot be handled: delete the output directory contents in a `finally`.
 
 ## Supported Sensor Data
 

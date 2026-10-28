@@ -11,6 +11,7 @@ struct HealthStripStats {
     std::size_t droppedMessages = 0;        // whole messages removed (data messages, not definitions)
     std::size_t strippedFields = 0;         // fields removed from messages that were kept
     std::size_t developerFieldsRemoved = 0; // developer fields seen on any message (all are removed)
+    std::size_t trailingBytesDropped = 0;   // bytes after the last valid FIT file (junk, padding, damaged chained file) not copied
 };
 
 /**
@@ -22,8 +23,19 @@ struct HealthStripStats {
  * rebuilt). The decision table lives in docs/health-strip-table.tsv and is
  * compiled into src/health_table.inc (see docs/health-strip.md).
  *
+ * Two paths: a linear byte-level rewriter (default, ~30 MB/s) and the SDK
+ * decode/encode (only for files with compressed-timestamp headers). Both use
+ * the same table.
+ *
  * Fails closed: anything that cannot be decoded or cleaned throws, and the
  * caller must not use any output.
+ *
+ * Output path: pass a fresh path. The output replaces an existing file only on
+ * success (atomic rename); on failure an existing file is left as it was (it is
+ * never unlinked, in == out is legal). Handled failures remove the temporary
+ * files (`<out>.tmp.<pid>`, `<out>.conv.<pid>`); a SIGKILL (for instance the
+ * 30 s CPU limit) cannot be handled, so callers delete the output directory
+ * contents in a finally block.
  */
 class HealthStripper {
 public:

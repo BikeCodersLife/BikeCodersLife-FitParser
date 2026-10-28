@@ -356,7 +356,12 @@ int runStripHealth(const std::string& inputPath, const std::string& ext, const s
 
     std::cout << "{\"droppedMessages\": " << stats.droppedMessages
               << ", \"strippedFields\": " << stats.strippedFields
-              << ", \"developerFieldsRemoved\": " << stats.developerFieldsRemoved << "}" << std::endl;
+              << ", \"developerFieldsRemoved\": " << stats.developerFieldsRemoved
+              << ", \"trailingBytesDropped\": " << stats.trailingBytesDropped << "}" << std::endl;
+    if (stats.trailingBytesDropped > 0) {
+        std::cerr << "Warning: " << stats.trailingBytesDropped
+                  << " byte(s) after the last valid FIT file were not copied (junk, padding or a damaged chained file)" << std::endl;
+    }
     return 0;
 }
 

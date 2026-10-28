@@ -13,6 +13,8 @@
 #include <cstring>
 #include <fstream>
 #include <iostream>
+#include <map>
+#include <set>
 #include <string>
 #include <vector>
 
@@ -182,6 +184,78 @@ int dump(const std::string& path) {
     return 0;
 }
 
+// checktable <tsv>: the table against the SDK profile itself.
+//  - every KEEP row exists in the profile with that number and name
+//  - every message of the profile has a decision, every field of a kept message has a row
+//  - no KEEP row looks like health data (hard-coded deny list, independent of the table)
+int checkTable(const std::string& path) {
+    std::ifstream in(path);
+    if (!in.is_open()) {
+        return 2;
+    }
+    struct Row { std::string kind, mname, fname, dec; int mnum, fnum; };
+    std::vector<Row> rows;
+    std::string line;
+    while (std::getline(in, line)) {
+        if (line.empty() || line[0] == '#') continue;
+        std::vector<std::string> c;
+        std::size_t start = 0;
+        for (;;) {
+            const std::size_t tab = line.find('\t', start);
+            c.push_back(line.substr(start, tab == std::string::npos ? std::string::npos : tab - start));
+            if (tab == std::string::npos) break;
+            start = tab + 1;
+        }
+        if (c.size() < 8) { std::cerr << "bad row: " << line << "\n"; return 3; }
+        rows.push_back({c[0], c[2], c[4], c[6], std::stoi(c[1]), c[3].empty() ? -1 : std::stoi(c[3])});
+    }
+    int errors = 0;
+    auto err = [&](const std::string& m) { std::cerr << "ERROR: " << m << "\n"; ++errors; };
+    // whole "_" separated words that must never be KEPT, and substrings that must never appear
+    static const char* denyWords[] = {"hr", "hrv", "power", "cadence", "calories", "stress", "spo2", "torque", "pco",
+                                      "stance", "oscillation", "rmssd", "sdrr", "stroke", "strokes", "stride", "strides",
+                                      "vo2", "effectiveness", "smoothness", "hemoglobin", "work", "rpe", "feel", "zone"};
+    static const char* denySubstr[] = {"heart", "respirat", "calorie", "core_temp", "body_temp", "cadence", "hemoglobin"};
+    std::map<int, std::set<int>> rowsFor;
+    std::set<int> decided;
+    for (const Row& r : rows) {
+        if (r.kind == "M") {
+            decided.insert(r.mnum);
+            const fit::Profile::MESG* m = fit::Profile::GetMesg(static_cast<FIT_UINT16>(r.mnum));
+            if (m == nullptr || m->name != r.mname || m->num != r.mnum) err("message " + std::to_string(r.mnum) + " " + r.mname + " not in profile");
+        } else if (r.kind == "F") {
+            rowsFor[r.mnum].insert(r.fnum);
+            const fit::Profile::FIELD* f = fit::Profile::GetField(static_cast<FIT_UINT16>(r.mnum), static_cast<FIT_UINT8>(r.fnum));
+            if (f == nullptr || f->name != r.fname) { err("field " + std::to_string(r.mnum) + "." + std::to_string(r.fnum) + " " + r.fname + " not in profile"); continue; }
+            if (r.dec == "K") {
+                const std::string w = "_" + r.fname + "_";
+                for (const char* d : denyWords) {
+                    if (w.find(std::string("_") + d + "_") != std::string::npos) err("KEEP field looks like health data: " + std::to_string(r.mnum) + "." + r.fname + " (word " + d + ")");
+                }
+                for (const char* d : denySubstr) {
+                    if (r.fname.find(d) != std::string::npos) err("KEEP field looks like health data: " + std::to_string(r.mnum) + "." + r.fname + " (" + d + ")");
+                }
+            }
+        } else if (r.kind == "E" && r.dec == "K") {
+            for (const char* d : {"hr_", "heart", "cad_", "recovery", "calorie", "power_high", "power_low"}) {
+                if (r.fname.find(d) != std::string::npos) err("KEEP event looks like health data: " + r.fname);
+            }
+        }
+    }
+    for (int i = 0; i < fit::Profile::MESGS; ++i) {
+        const fit::Profile::MESG& m = fit::Profile::mesgs[i];
+        if (!decided.count(m.num)) err("profile message " + std::to_string(m.num) + " " + m.name + " has no decision");
+        bool kept = false;
+        for (const Row& r : rows) if (r.kind == "M" && r.mnum == m.num && r.dec == "K") kept = true;
+        if (!kept) continue;
+        for (int j = 0; j < m.numFields; ++j) {
+            if (!rowsFor[m.num].count(m.fields[j].num)) err("field " + std::to_string(m.num) + "." + m.fields[j].name + " of a kept message has no row");
+        }
+    }
+    std::cout << rows.size() << " rows checked against profile " << FIT_PROFILE_VERSION_MAJOR << "." << FIT_PROFILE_VERSION_MINOR << ", " << errors << " errors\n";
+    return errors == 0 ? 0 : 1;
+}
+
 } // namespace
 
 int main(int argc, char** argv) {
@@ -191,6 +265,9 @@ int main(int argc, char** argv) {
     if (argc == 3 && std::strcmp(argv[1], "dump") == 0) {
         return dump(argv[2]);
     }
-    std::cerr << "usage: health-fit-tool rich <out.fit> | dump <in.fit>\n";
+    if (argc == 3 && std::strcmp(argv[1], "checktable") == 0) {
+        return checkTable(argv[2]);
+    }
+    std::cerr << "usage: health-fit-tool rich <out.fit> | dump <in.fit> | checktable <tsv>\n";
     return 1;
 }

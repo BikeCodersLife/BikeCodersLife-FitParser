@@ -547,7 +547,8 @@ echo ""
 echo "--- Health strip (--strip-health, v2.4.0) ---"
 # Needs the test helper (cmake target health-fit-tool) next to the parser.
 HEALTH_TOOL="${HEALTH_TOOL:-$(dirname "$PARSER")/health-fit-tool}"
-CHECK="python3 ${SCRIPT_DIR}/check_health_strip.py"
+CHECK_PY="${SCRIPT_DIR}/check_health_strip.py"
+CHECK="python3 $CHECK_PY"
 
 TOTAL=$((TOTAL + 1))
 if python3 "${SCRIPT_DIR}/../tools/gen_health_table.py" --check; then
@@ -682,6 +683,90 @@ PY
             fail "$filename --strip-health: $(head -3 "$TMP_DIR/err.txt")"
         fi
     done
+
+    # the table against the SDK profile itself (numbers, names, completeness, deny list of health words)
+    TOTAL=$((TOTAL + 1))
+    if res=$("$HEALTH_TOOL" checktable "${SCRIPT_DIR}/../docs/health-strip-table.tsv" 2>&1); then
+        pass "health table vs SDK profile: $res"
+    else
+        fail "health table vs SDK profile: $(echo "$res" | head -3)"
+    fi
+
+    # compressed timestamp headers: handled by the SDK path, timestamps and track intact
+    TOTAL=$((TOTAL + 1))
+    python3 "$CHECK_PY" mkraw compressed "$TMP_DIR/compressed.fit"
+    if "$PARSER" "$TMP_DIR/compressed.fit" > "$TMP_DIR/comp-in.json" 2>/dev/null \
+        && "$PARSER" "$TMP_DIR/compressed.fit" --strip-health "$TMP_DIR/comp-out.fit" > /dev/null 2>"$TMP_DIR/err.txt" \
+        && "$HEALTH_TOOL" dump "$TMP_DIR/comp-out.fit" > "$TMP_DIR/comp-out.txt" \
+        && $CHECK dump "$TMP_DIR/comp-out.txt" > /dev/null 2>"$TMP_DIR/err.txt" \
+        && "$PARSER" "$TMP_DIR/comp-out.fit" > "$TMP_DIR/comp-out.json" 2>/dev/null \
+        && $CHECK track "$TMP_DIR/comp-in.json" "$TMP_DIR/comp-out.json" --expect-health > "$TMP_DIR/check.txt" 2>"$TMP_DIR/err.txt"; then
+        pass "FIT with compressed timestamp headers: cleaned, same track [$(cat "$TMP_DIR/check.txt")]"
+    else
+        fail "FIT with compressed timestamp headers: $(head -3 "$TMP_DIR/err.txt")"
+    fi
+
+    # unknown message (65300) and unknown record field (200) are removed (allow-list)
+    TOTAL=$((TOTAL + 1))
+    python3 "$CHECK_PY" mkraw unknown "$TMP_DIR/unknown.fit"
+    if "$PARSER" "$TMP_DIR/unknown.fit" --strip-health "$TMP_DIR/unknown-out.fit" > /dev/null 2>"$TMP_DIR/err.txt" \
+        && "$HEALTH_TOOL" dump "$TMP_DIR/unknown-out.fit" > "$TMP_DIR/unknown-out.txt" \
+        && $CHECK dump "$TMP_DIR/unknown-out.txt" > /dev/null 2>"$TMP_DIR/err.txt" \
+        && ! grep -q " 200" "$TMP_DIR/unknown-out.txt" \
+        && [ "$(grep -c '^mesg 20 ' "$TMP_DIR/unknown-out.txt")" -eq 4 ]; then
+        pass "unknown message 65300 and unknown record field 200 removed, 4 records kept"
+    else
+        fail "unknown message/field: $(head -3 "$TMP_DIR/err.txt")"
+    fi
+
+    # trailing junk is reported (JSON + stderr), an existing output is replaced only on success
+    TOTAL=$((TOTAL + 1))
+    if out=$("$PARSER" "$TMP_DIR/junk.fit" --strip-health "$TMP_DIR/junk-out2.fit" 2>"$TMP_DIR/err.txt") \
+        && echo "$out" | grep -q '"trailingBytesDropped": 16' && grep -q "not copied" "$TMP_DIR/err.txt"; then
+        pass "trailing junk: counted in trailingBytesDropped and warned on stderr"
+    else
+        fail "trailing junk not reported: $out"
+    fi
+    TOTAL=$((TOTAL + 1))
+    echo keep-me > "$TMP_DIR/stale.fit"
+    if "$PARSER" "$TMP_DIR/truncated.fit" --strip-health "$TMP_DIR/stale.fit" > /dev/null 2>&1; then
+        fail "truncated input accepted"
+    elif [ "$(cat "$TMP_DIR/stale.fit")" = "keep-me" ] && ! ls "$TMP_DIR"/stale.fit.* > /dev/null 2>&1; then
+        pass "failure leaves an existing output untouched (callers pass a fresh path) and no temp file"
+    else
+        fail "failure changed the existing output or left a temp file"
+    fi
+
+    # speed: ONE big FIT (many MB), linear time. Prints the time; fails above a generous bound.
+    BENCH_N="${BENCH_RECORDS:-400000}"
+    python3 "$CHECK_PY" mkraw bench "$TMP_DIR/bench.fit" "$BENCH_N"
+    TOTAL=$((TOTAL + 1))
+    t0=$(date +%s%N)
+    out=$("$PARSER" "$TMP_DIR/bench.fit" --strip-health "$TMP_DIR/bench-out.fit" 2>/dev/null); rc=$?
+    t1=$(date +%s%N)
+    ms=$(( (t1 - t0) / 1000000 ))
+    insz=$(wc -c < "$TMP_DIR/bench.fit"); outsz=$(wc -c < "$TMP_DIR/bench-out.fit")
+    if [ $rc -eq 0 ] && echo "$out" | python3 -c "
+import json, sys
+d = json.loads(sys.stdin.read()); n = $BENCH_N
+assert d['strippedFields'] == 3 * n and d['droppedMessages'] == 0, d
+assert 21 * n < $outsz < 21 * n + 200, ($outsz, 21 * n)
+" && [ "$ms" -lt 10000 ]; then
+        pass "benchmark: $BENCH_N records, $((insz / 1000000)) MB in, $((outsz / 1000000)) MB out, ${ms} ms"
+    else
+        fail "benchmark: rc=$rc ${ms} ms in=$insz out=$outsz $out"
+    fi
+    # the same generator, small: parse the output and count the points
+    TOTAL=$((TOTAL + 1))
+    python3 "$CHECK_PY" mkraw bench "$TMP_DIR/bench-small.fit" 2000
+    if "$PARSER" "$TMP_DIR/bench-small.fit" --strip-health "$TMP_DIR/bench-small-out.fit" > /dev/null 2>&1 \
+        && "$PARSER" "$TMP_DIR/bench-small.fit" > "$TMP_DIR/bs-in.json" 2>/dev/null \
+        && "$PARSER" "$TMP_DIR/bench-small-out.fit" > "$TMP_DIR/bs-out.json" 2>/dev/null \
+        && $CHECK track "$TMP_DIR/bs-in.json" "$TMP_DIR/bs-out.json" --expect-health > "$TMP_DIR/check.txt" 2>&1; then
+        pass "synthetic 2000-point FIT: same track, no health [$(cat "$TMP_DIR/check.txt")]"
+    else
+        fail "synthetic 2000-point FIT: $(head -3 "$TMP_DIR/check.txt")"
+    fi
 
     # usage errors
     TOTAL=$((TOTAL + 1))
