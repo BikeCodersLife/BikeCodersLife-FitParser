@@ -55,6 +55,10 @@ set(STRIPPER_SOURCES
 add_executable(gps-stripper ${STRIPPER_SOURCES} ${FIT_SDK_SOURCES})
 target_link_libraries(gps-stripper PRIVATE pugixml::pugixml)
 
+# Test helper for --strip-health (builds the "everything" fixture, dumps a FIT). Not installed, not released.
+add_executable(health-fit-tool tests/tools/health_fit_tool.cpp ${FIT_SDK_SOURCES})
+target_compile_options(health-fit-tool PRIVATE -O2 -Wall -Wextra -pedantic)
+
 # Compiler options (shared)
 foreach(target fit-parser gps-stripper)
     target_compile_options(${target} PRIVATE -O3 -Wall -Wextra -pedantic)

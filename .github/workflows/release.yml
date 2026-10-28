@@ -46,7 +46,7 @@ jobs:
         mkdir build
         cd build
         cmake -DCMAKE_BUILD_TYPE=Release ..
-        make -j$(nproc) fit-parser gps-stripper
+        make -j$(nproc) fit-parser gps-stripper health-fit-tool
 
     - name: Build Release (Alpine)
       if: matrix.is_alpine

@@ -12,6 +12,20 @@ tests/
 └── generate_expected.sh  # Generate baseline expected outputs
 ```
 
+## Health strip tests (`--strip-health`)
+
+`run_tests.sh` has a "Health strip" section. It needs the helper
+`health-fit-tool` (`make health-fit-tool`, built next to `fit-parser`; override
+with `HEALTH_TOOL=`):
+
+- `health-fit-tool rich out.fit` writes a FIT with EVERY field of EVERY message of
+  the SDK profile, developer fields (CORE body temperature, power) and an event of
+  every type; `health-fit-tool dump` lists what a FIT contains.
+- `check_health_strip.py` checks the dump of the stripped file against
+  `docs/health-strip-table.tsv` and compares the JSON track of input and output.
+- The generated `src/health_table.inc` / `docs/health-strip.md` must match the TSV
+  (`python3 tools/gen_health_table.py` regenerates them).
+
 ## Running Tests
 
 ### Generate Expected Outputs (First Time)

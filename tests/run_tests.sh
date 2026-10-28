@@ -29,7 +29,7 @@ fail() { echo -e "${RED}FAIL${NC} $1"; FAILED=$((FAILED + 1)); }
 skip() { echo -e "${YELLOW}SKIP${NC} $1"; PASSED=$((PASSED + 1)); }
 
 echo "========================================="
-echo "FIT Parser Test Suite v2.0"
+echo "FIT Parser Test Suite v2.4"
 echo "========================================="
 echo ""
 
@@ -540,6 +540,158 @@ elif echo "$err" | grep -q "no valid track points"; then
     pass "no-position-no-time.gpx: still rejected (no valid track points)"
 else
     fail "no-position-no-time.gpx: rejected with an unexpected error: $err"
+fi
+
+# ============================================================================
+echo ""
+echo "--- Health strip (--strip-health, v2.4.0) ---"
+# Needs the test helper (cmake target health-fit-tool) next to the parser.
+HEALTH_TOOL="${HEALTH_TOOL:-$(dirname "$PARSER")/health-fit-tool}"
+CHECK="python3 ${SCRIPT_DIR}/check_health_strip.py"
+
+TOTAL=$((TOTAL + 1))
+if python3 "${SCRIPT_DIR}/../tools/gen_health_table.py" --check; then
+    pass "health table: src/health_table.inc and docs/health-strip.md match docs/health-strip-table.tsv"
+else
+    fail "health table: generated files are out of date (run python3 tools/gen_health_table.py)"
+fi
+
+if [ ! -x "$HEALTH_TOOL" ]; then
+    TOTAL=$((TOTAL + 1))
+    fail "health strip: test helper not found at $HEALTH_TOOL (build with: make health-fit-tool)"
+else
+    RICH="$TMP_DIR/rich.fit"
+    "$HEALTH_TOOL" rich "$RICH"
+
+    # (a)(b) every field of every message of the profile + developer fields in, only the table out
+    TOTAL=$((TOTAL + 1))
+    if out=$("$PARSER" "$RICH" --strip-health "$TMP_DIR/rich-out.fit" 2>"$TMP_DIR/err.txt") \
+        && "$HEALTH_TOOL" dump "$TMP_DIR/rich-out.fit" > "$TMP_DIR/rich-out.txt" \
+        && echo "$out" | python3 -c "
+import json, sys
+d = json.loads(sys.stdin.read())
+assert d['droppedMessages'] > 0 and d['strippedFields'] > 0 and d['developerFieldsRemoved'] > 0, d
+" \
+        && $CHECK dump "$TMP_DIR/rich-out.txt" > "$TMP_DIR/check.txt" 2>&1; then
+        pass "rich FIT (all profile fields + developer fields + CORE/power dev data): only the table survives, output decodes (CRC ok) [$(cat "$TMP_DIR/check.txt")]"
+    else
+        fail "rich FIT: $(cat "$TMP_DIR/check.txt" "$TMP_DIR/err.txt" 2>/dev/null | head -3)"
+    fi
+
+    # (a) JSON view: HR / power / cadence gone, GPS / time / distance identical
+    TOTAL=$((TOTAL + 1))
+    if "$PARSER" "$RICH" > "$TMP_DIR/rich-in.json" 2>/dev/null \
+        && "$PARSER" "$TMP_DIR/rich-out.fit" > "$TMP_DIR/rich-out.json" 2>/dev/null \
+        && $CHECK track "$TMP_DIR/rich-in.json" "$TMP_DIR/rich-out.json" --expect-health > "$TMP_DIR/check.txt" 2>&1; then
+        pass "rich FIT: no heart rate / power / cadence in the JSON, same track [$(cat "$TMP_DIR/check.txt")]"
+    else
+        fail "rich FIT track: $(cat "$TMP_DIR/check.txt" | head -3)"
+    fi
+
+    # chained FIT files are each cleaned; junk after the last file is not copied
+    TOTAL=$((TOTAL + 1))
+    cat "$RICH" "$RICH" > "$TMP_DIR/chain.fit"
+    if "$PARSER" "$TMP_DIR/chain.fit" --strip-health "$TMP_DIR/chain-out.fit" > /dev/null 2>&1 \
+        && [ "$(wc -c < "$TMP_DIR/chain-out.fit")" -eq $((2 * $(wc -c < "$TMP_DIR/rich-out.fit"))) ] \
+        && cmp -s <(head -c "$(wc -c < "$TMP_DIR/rich-out.fit")" "$TMP_DIR/chain-out.fit") "$TMP_DIR/rich-out.fit"; then
+        pass "chained FIT: both files cleaned"
+    else
+        fail "chained FIT: not cleaned as two files"
+    fi
+    TOTAL=$((TOTAL + 1))
+    { cat "$RICH"; head -c 16 /dev/zero; } > "$TMP_DIR/junk.fit"
+    if "$PARSER" "$TMP_DIR/junk.fit" --strip-health "$TMP_DIR/junk-out.fit" > /dev/null 2>&1 \
+        && cmp -s "$TMP_DIR/junk-out.fit" "$TMP_DIR/rich-out.fit"; then
+        pass "FIT with trailing junk: junk not copied"
+    else
+        fail "FIT with trailing junk: output differs from the clean file's"
+    fi
+
+    # (c) fail closed: truncated, bad CRC, empty, not FIT -> exit != 0 and NO output file, no temp left over
+    head -c $(( $(wc -c < "$RICH") / 2 )) "$RICH" > "$TMP_DIR/truncated.fit"
+    cp "$RICH" "$TMP_DIR/badcrc.fit"
+    printf '\x00' | dd of="$TMP_DIR/badcrc.fit" bs=1 seek=$(( $(wc -c < "$RICH") - 1 )) conv=notrunc 2>/dev/null
+    printf 'this is not a fit file at all' > "$TMP_DIR/notfit.fit"
+    cp "$RICH" "$TMP_DIR/badhdr.fit"
+    printf 'XXXX' | dd of="$TMP_DIR/badhdr.fit" bs=1 seek=8 conv=notrunc 2>/dev/null
+    for bad in truncated badcrc notfit badhdr; do
+        TOTAL=$((TOTAL + 1))
+        rm -rf "$TMP_DIR/failout" && mkdir "$TMP_DIR/failout"
+        if "$PARSER" "$TMP_DIR/$bad.fit" --strip-health "$TMP_DIR/failout/out.fit" > /dev/null 2>&1; then
+            fail "$bad.fit: --strip-health exited 0"
+        elif [ -n "$(ls -A "$TMP_DIR/failout")" ]; then
+            fail "$bad.fit: failed but left a file behind: $(ls "$TMP_DIR/failout")"
+        else
+            pass "$bad.fit: exit != 0, no output file, no temp file"
+        fi
+    done
+
+    # (d)(e) GPX / TCX with heart rate, cadence, power extensions -> FIT without them
+    for src in with-power-and-hr.gpx tcx-with-sensors.tcx; do
+        TOTAL=$((TOTAL + 1))
+        if "$PARSER" "$FIXTURES_DIR/$src" > "$TMP_DIR/src.json" 2>/dev/null \
+            && out=$("$PARSER" "$FIXTURES_DIR/$src" --strip-health "$TMP_DIR/src-out.fit" 2>/dev/null) \
+            && "$HEALTH_TOOL" dump "$TMP_DIR/src-out.fit" > "$TMP_DIR/src-out.txt" \
+            && $CHECK dump "$TMP_DIR/src-out.txt" > /dev/null 2>&1 \
+            && "$PARSER" "$TMP_DIR/src-out.fit" > "$TMP_DIR/src-out.json" 2>/dev/null \
+            && python3 - "$TMP_DIR/src.json" "$TMP_DIR/src-out.json" <<'PY' 2>"$TMP_DIR/err.txt"
+import json, sys
+a = json.load(open(sys.argv[1]))['coordinates']
+b = json.load(open(sys.argv[2]))['coordinates']
+assert any('heartRate' in p or 'power' in p or 'cadence' in p for p in a), 'input has no health values'
+assert len(a) == len(b), f'{len(a)} vs {len(b)} points'
+for x, y in zip(a, b):
+    assert not ({'heartRate', 'power', 'cadence'} & set(y)), y
+    assert abs(x['lat'] - y['lat']) < 1e-5 and abs(x['lon'] - y['lon']) < 1e-5, (x, y)
+    assert x['timestamp'] == y['timestamp'], (x, y)
+PY
+        then
+            pass "$src → FIT without heart rate / power / cadence, same positions and times"
+        else
+            fail "$src --strip-health: $(head -3 "$TMP_DIR/err.txt")"
+        fi
+    done
+
+    # (f) no health data in: the track comes out equal
+    for src in no-sensors-gps-only.gpx tcx-no-sensors.tcx; do
+        TOTAL=$((TOTAL + 1))
+        if "$PARSER" "$FIXTURES_DIR/$src" --convert "$TMP_DIR/plain.fit" > /dev/null 2>&1 \
+            && "$PARSER" "$TMP_DIR/plain.fit" --strip-health "$TMP_DIR/plain-out.fit" > /dev/null 2>&1 \
+            && "$PARSER" "$TMP_DIR/plain.fit" > "$TMP_DIR/plain.json" 2>/dev/null \
+            && "$PARSER" "$TMP_DIR/plain-out.fit" > "$TMP_DIR/plain-out.json" 2>/dev/null \
+            && $CHECK track "$TMP_DIR/plain.json" "$TMP_DIR/plain-out.json" --identical > "$TMP_DIR/check.txt" 2>&1; then
+            pass "$src (no health data): track identical after --strip-health [$(cat "$TMP_DIR/check.txt")]"
+        else
+            fail "$src without health data: $(head -3 "$TMP_DIR/check.txt")"
+        fi
+    done
+
+    # every real FIT fixture: valid output, same track, no health values
+    for fit_file in "$FIXTURES_DIR"/*.fit; do
+        [ ! -f "$fit_file" ] && continue
+        TOTAL=$((TOTAL + 1))
+        filename=$(basename "$fit_file")
+        if "$PARSER" "$fit_file" --strip-health "$TMP_DIR/real-out.fit" > /dev/null 2>"$TMP_DIR/err.txt" \
+            && "$HEALTH_TOOL" dump "$TMP_DIR/real-out.fit" > "$TMP_DIR/real-out.txt" \
+            && $CHECK dump "$TMP_DIR/real-out.txt" > /dev/null 2>"$TMP_DIR/err.txt" \
+            && "$PARSER" "$fit_file" > "$TMP_DIR/real-in.json" 2>/dev/null \
+            && "$PARSER" "$TMP_DIR/real-out.fit" > "$TMP_DIR/real-out.json" 2>/dev/null \
+            && $CHECK track "$TMP_DIR/real-in.json" "$TMP_DIR/real-out.json" > "$TMP_DIR/check.txt" 2>"$TMP_DIR/err.txt"; then
+            pass "$filename: --strip-health keeps the track, drops health ($(cat "$TMP_DIR/check.txt"))"
+        else
+            fail "$filename --strip-health: $(head -3 "$TMP_DIR/err.txt")"
+        fi
+    done
+
+    # usage errors
+    TOTAL=$((TOTAL + 1))
+    if "$PARSER" "$FIXTURES_DIR/sample.gpx" --strip-health 2>/dev/null; then
+        fail "--strip-health without an output path was accepted"
+    elif "$PARSER" "$FIXTURES_DIR/sample.gpx" --strip-health "$TMP_DIR/x.fit" --convert "$TMP_DIR/y.fit" 2>/dev/null; then
+        fail "--strip-health together with --convert was accepted"
+    else
+        pass "--strip-health usage errors rejected"
+    fi
 fi
 
 echo ""
