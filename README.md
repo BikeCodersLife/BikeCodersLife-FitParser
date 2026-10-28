@@ -143,6 +143,10 @@ field, a size that is not a multiple of its base type, a base type number outsid
 the FIT table, an architecture byte above 1, a data message without a definition,
 duplicate field numbers in one definition, or a record stream that does not end at
 the header's data size exits non-zero with `invalid FIT structure: <reason>`.
+Every chained FIT file in the input is checked (the vendor decoder reads them all); a damaged
+or truncated chained file is refused in parse mode and gps-stripper (the strip drops it and
+reports `trailingBytesDropped`). Bytes after a file that do not start like a FIT header are
+ignored. The parse mode reads the file once and decodes the very bytes it validated.
 
 Callers: pass a fresh output path. An existing file is replaced only on success
 and is never deleted on failure. Handled failures remove the temporary files

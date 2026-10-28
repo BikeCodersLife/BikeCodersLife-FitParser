@@ -1,4 +1,5 @@
 #include <iostream>
+#include <vector>
 #include <fstream>
 #include <sstream>
 #include <cstdio>
@@ -332,7 +333,18 @@ int runStripHealth(const std::string& inputPath, const std::string& ext, const s
             pt.hasPower = false;
         }
 
-        const std::string tmpFit = outputPath + ".conv." + std::to_string(static_cast<long>(getpid()));
+        // unpredictable temp name next to the output (mkstemp), removed on every handled failure
+        std::string tmpFit = outputPath + ".conv.XXXXXX";
+        {
+            std::vector<char> nm(tmpFit.begin(), tmpFit.end());
+            nm.push_back('\0');
+            const int fd = mkstemp(nm.data());
+            if (fd < 0) {
+                throw std::runtime_error("Cannot create temporary file next to: " + outputPath);
+            }
+            close(fd);
+            tmpFit.assign(nm.data());
+        }
         std::string converted;
         try {
             FitWriter writer;

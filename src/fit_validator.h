@@ -10,13 +10,16 @@
  * uploaded file (the SDK decoder is memory-unsafe on hostile definitions:
  * base type numbers >= 17, zero sized fields, bad developer field tables).
  *
- * Walks the first FIT file (header, every definition, every data message) and
- * refuses anything the SDK would refuse or that cannot be valid:
+ * Walks EVERY chained FIT file of the input (header, every definition, every data
+ * message; the vendor decoder reads them all) and refuses anything the SDK would refuse or that cannot be valid:
  *   - bad header / ".FIT" tag / sizes that do not fit the input
  *   - architecture byte > 1, data message without a definition
  *   - field size 0, size not a multiple of the base type size, base type number >= 17
  *   - duplicate field numbers inside one definition, developer field size 0
  *   - a record stream that does not end exactly at the data size
+ * Bytes after a file that do not start like a FIT header (padding, junk) are ignored, as the
+ * strip mode ignores them; a header-like start must be a complete valid file (truncated or
+ * damaged chained files are refused, never skipped).
  * The CRC is not checked here (the SDK and the strip mode do that themselves).
  */
 

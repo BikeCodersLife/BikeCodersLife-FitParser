@@ -4,7 +4,9 @@
 //
 // Each seed is cut at record boundaries, then mutated (bit flips, length fields,
 // definition counts, architecture byte, header-type bits incl. compressed and
-// developer flags, insert/delete, truncation, chained second file, trailing junk).
+// developer flags, insert/delete, truncation, trailing junk). About 30% of the inputs are
+// CHAINS of 2-3 FIT files (valid and mutated parts, any order, each part with its own
+// fixed up sizes and CRCs), because the vendor decoder reads every chained file.
 // 90% of the inputs get the header size and both CRCs fixed up, so the structure
 // code behind the CRC check is reached. For every input:
 //   1. HealthStripper::stripBytes must either throw or return bytes that an
@@ -156,8 +158,7 @@ int main(int argc, char** argv) {
     std::mt19937 r(seed);
     long stripOk = 0, stripRefused = 0, bad = 0, slow = 0, parsed = 0, parseRefused = 0;
     std::map<std::string, int> reasons;
-    for (int it = 0; it < runs; it++) {
-        S b = seeds[r() % seeds.size()];
+    auto mutate = [&](S& b) {
         int nm = 1 + r() % 2;
         for (int m = 0; m < nm && !b.empty(); m++) {
             size_t off = (r() % 3 == 0) ? r() % b.size() : r() % std::min<size_t>(b.size(), 700);
@@ -178,8 +179,24 @@ int main(int argc, char** argv) {
                 case 13: b[off] = (char)(r() % 2 ? 1 : r() % 40); break;
             }
         }
-        int mode = r() % 10;
-        if (mode < 9) fixup(b, r);
+    };
+    long chains = 0;
+    for (int it = 0; it < runs; it++) {
+        S b;
+        if (r() % 10 < 3) {
+            // chain of 2-3 files; each part valid (60%) or mutated, with its own sizes and CRCs
+            chains++;
+            int parts = 2 + r() % 2;
+            for (int k = 0; k < parts; k++) {
+                S part = seeds[r() % seeds.size()];
+                if (r() % 10 < 4) { mutate(part); if (r() % 10 < 9) fixup(part, r); }
+                b += part;
+            }
+        } else {
+            b = seeds[r() % seeds.size()];
+            mutate(b);
+            if (r() % 10 < 9) fixup(b, r);
+        }
         if (r() % 10 == 0) b += S(r() % 20, (char)(r() % 2 ? 0 : r()));
         { std::ofstream(work + "/cur.fit", std::ios::binary) << b; } // last input, kept for a crash repro
 
@@ -195,16 +212,14 @@ int main(int argc, char** argv) {
             if (!rr.empty()) { bad++; std::cerr << "BAD " << it << " " << rr << "\n"; std::ofstream(work + "/bad" + std::to_string(it) + ".fit", std::ios::binary) << b; }
         }
 
-        // plain parse mode: structural pre-check, then the vendor SDK (only reached when the check passes)
+        // plain parse mode (FitParser: structural check of every chained file, then the vendor SDK)
         std::string reason = validateFitFile(work + "/cur.fit");
         if (!reason.empty()) { parseRefused++; }
-        else {
-            try { FitParser p(work + "/cur.fit"); p.extractCoordinates(); } catch (const std::exception&) {}
-            parsed++;
-        }
+        else { parsed++; }
+        try { FitParser p(work + "/cur.fit"); p.extractCoordinates(); } catch (const std::exception&) {}
     }
     std::cout << "runs=" << runs << " strip_ok=" << stripOk << " strip_refused=" << stripRefused << " violations=" << bad
-              << " slow=" << slow << " parse_sdk_reached=" << parsed << " parse_refused_by_validator=" << parseRefused << "\n";
+              << " slow=" << slow << " parse_sdk_reached=" << parsed << " parse_refused_by_validator=" << parseRefused << " chains=" << chains << "\n";
     for (auto& k : reasons) std::cout << "  " << k.second << " " << k.first << "\n";
     return bad ? 1 : 0;
 }

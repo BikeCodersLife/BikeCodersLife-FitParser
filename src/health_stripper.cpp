@@ -9,6 +9,8 @@
 #include <vector>
 #include <bitset>
 #include <string_view>
+#include <cerrno>
+#include <sys/stat.h>
 #include <unistd.h>
 
 
@@ -362,22 +364,41 @@ std::string HealthStripper::stripBytes(const std::string& input, HealthStripStat
 }
 
 void HealthStripper::writeAtomically(const std::string& outputPath, const std::string& bytes) {
-    const std::string tmp = outputPath + ".tmp." + std::to_string(static_cast<long>(getpid()));
-    {
-        std::ofstream file(tmp, std::ios::out | std::ios::binary | std::ios::trunc);
-        if (!file.is_open()) {
-            throw std::runtime_error("Cannot open output file: " + tmp);
+    // Unpredictable temp name in the output's directory (mkstemp: O_EXCL, mode 0600), renamed on
+    // success, unlinked on every handled failure.
+    std::string tmp = outputPath + ".tmp.XXXXXX";
+    std::vector<char> name(tmp.begin(), tmp.end());
+    name.push_back('\0');
+    const int fd = mkstemp(name.data());
+    if (fd < 0) {
+        throw std::runtime_error("Cannot create temporary output file next to: " + outputPath);
+    }
+    tmp.assign(name.data());
+    auto fail = [&](const std::string& why) {
+        close(fd);
+        unlink(tmp.c_str());
+        throw std::runtime_error(why + ": " + outputPath);
+    };
+    const mode_t mask = umask(0);
+    umask(mask);
+    if (fchmod(fd, 0666 & ~mask) != 0) {
+        fail("Cannot set permissions of the output file");
+    }
+    std::size_t done = 0;
+    while (done < bytes.size()) {
+        const ssize_t w = ::write(fd, bytes.data() + done, bytes.size() - done);
+        if (w < 0) {
+            if (errno == EINTR) continue;
+            fail("Cannot write output file");
         }
-        file.write(bytes.data(), static_cast<std::streamsize>(bytes.size()));
-        file.flush();
-        if (!file.good()) {
-            file.close();
-            std::remove(tmp.c_str());
-            throw std::runtime_error("Cannot write output file: " + tmp);
-        }
+        done += static_cast<std::size_t>(w);
+    }
+    if (close(fd) != 0) {
+        unlink(tmp.c_str());
+        throw std::runtime_error("Cannot write output file: " + outputPath);
     }
     if (std::rename(tmp.c_str(), outputPath.c_str()) != 0) {
-        std::remove(tmp.c_str());
+        unlink(tmp.c_str());
         throw std::runtime_error("Cannot move output file into place: " + outputPath);
     }
 }

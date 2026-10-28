@@ -770,7 +770,8 @@ assert 21 * n < $outsz < 21 * n + 200, ($outsz, 21 * n)
 
     # structural refusals: strip AND plain parse refuse cleanly (exit 1, never a crash), no output file
     INVALID_DIR="$FIXTURES_DIR/invalid"
-    for kind in zerosize badbase oddsize arch2 nodef dupfield; do
+    GPS_STRIPPER="${GPS_STRIPPER:-$(dirname "$PARSER")/gps-stripper}"
+    for kind in zerosize badbase oddsize arch2 nodef dupfield chain-badbase chain-truncated; do
         python3 "$CHECK_PY" mkraw "$kind" "$TMP_DIR/inv-$kind.fit"
     done
     for bad in "$TMP_DIR"/inv-*.fit "$INVALID_DIR"/*.fit; do
@@ -780,26 +781,47 @@ assert 21 * n < $outsz < 21 * n + 200, ($outsz, 21 * n)
         rc1=0; rc2=0
         "$PARSER" "$bad" --strip-health "$TMP_DIR/failout/out.fit" > /dev/null 2>"$TMP_DIR/err1.txt" || rc1=$?
         "$PARSER" "$bad" > /dev/null 2>"$TMP_DIR/err2.txt" || rc2=$?
-        if [ $rc1 -eq 1 ] && [ $rc2 -eq 1 ] && [ -z "$(ls -A "$TMP_DIR/failout")" ] \
-            && grep -q "invalid FIT structure" "$TMP_DIR/err1.txt" "$TMP_DIR/err2.txt"; then
-            pass "$(basename "$bad"): refused by strip and parse ($(sed 's/.*structure: //' "$TMP_DIR/err1.txt"))"
+        gps_rc=0
+        "${GPS_STRIPPER:-/nonexistent}" "$bad" "$TMP_DIR/failout/gps.fit" 100 100 > /dev/null 2>&1 || gps_rc=$?
+        want1=1; chain=0
+        case "$(basename "$bad")" in *chain*) want1=0; chain=1;; esac   # strip drops a bad chained file (reported); parse/gps refuse it
+        strip_ok=0
+        if [ $chain -eq 1 ]; then
+            [ $rc1 -eq 0 ] && grep -q "were not copied" "$TMP_DIR/err1.txt" && strip_ok=1
         else
-            fail "$(basename "$bad"): strip rc=$rc1, parse rc=$rc2 (want 1/1 with 'invalid FIT structure'): $(head -1 "$TMP_DIR/err1.txt") / $(head -1 "$TMP_DIR/err2.txt")"
+            [ $rc1 -eq 1 ] && [ -z "$(ls -A "$TMP_DIR/failout" | grep -v '^gps.fit$' || true)" ] && grep -q "invalid FIT structure" "$TMP_DIR/err1.txt" && strip_ok=1
+        fi
+        if [ $strip_ok -eq 1 ] && [ $rc2 -eq 1 ] && ! ls "$TMP_DIR/failout" | grep -q gps \
+            && grep -q "invalid FIT structure" "$TMP_DIR/err2.txt" \
+            && { [ ! -x "${GPS_STRIPPER:-/nonexistent}" ] || [ $gps_rc -eq 1 ]; }; then
+            pass "$(basename "$bad"): parse and gps-stripper exit 1 ($(sed 's/.*structure: //' "$TMP_DIR/err2.txt")), strip exit $rc1"
+        else
+            fail "$(basename "$bad"): strip rc=$rc1 (want $want1), parse rc=$rc2 (want 1), gps rc=$gps_rc (want 1): $(head -1 "$TMP_DIR/err1.txt") / $(head -1 "$TMP_DIR/err2.txt")"
         fi
     done
+    # a valid file followed by padding is fine (strip drops it, parse accepts it)
+    TOTAL=$((TOTAL + 1))
+    python3 "$CHECK_PY" mkraw chain-junk-ok "$TMP_DIR/chainjunk.fit"
+    if "$PARSER" "$TMP_DIR/chainjunk.fit" --strip-health "$TMP_DIR/chainjunk-out.fit" 2>/dev/null | grep -q '"trailingBytesDropped": 8'; then
+        pass "valid file + 8 padding bytes: strip drops and reports them (the validator ignores non-header bytes)"
+    else
+        fail "valid file + padding handled wrongly"
+    fi
     # a compressed timestamp with no earlier full timestamp cannot be expanded: strip refuses
     TOTAL=$((TOTAL + 1))
     python3 "$CHECK_PY" mkraw compressed-first "$TMP_DIR/cfirst.fit"
-    if "$PARSER" "$TMP_DIR/cfirst.fit" --strip-health "$TMP_DIR/cfirst-out.fit" > /dev/null 2>&1 || [ -e "$TMP_DIR/cfirst-out.fit" ]; then
-        fail "compressed timestamp without reference accepted"
+    rc=0; "$PARSER" "$TMP_DIR/cfirst.fit" --strip-health "$TMP_DIR/cfirst-out.fit" > /dev/null 2>"$TMP_DIR/err.txt" || rc=$?
+    if [ $rc -ne 1 ] || [ -e "$TMP_DIR/cfirst-out.fit" ] || ! grep -q "compressed timestamp without a previous full timestamp" "$TMP_DIR/err.txt"; then
+        fail "compressed timestamp without reference: rc=$rc $(head -1 "$TMP_DIR/err.txt")"
     else
         pass "compressed timestamp without a previous full timestamp: refused, no output"
     fi
     # nothing left after cleaning (only health messages): refused, no output
     TOTAL=$((TOTAL + 1))
     python3 "$CHECK_PY" mkraw allhealth "$TMP_DIR/allhealth.fit"
-    if "$PARSER" "$TMP_DIR/allhealth.fit" --strip-health "$TMP_DIR/allhealth-out.fit" > /dev/null 2>&1 || [ -e "$TMP_DIR/allhealth-out.fit" ]; then
-        fail "file with only health messages produced an output"
+    rc=0; "$PARSER" "$TMP_DIR/allhealth.fit" --strip-health "$TMP_DIR/allhealth-out.fit" > /dev/null 2>"$TMP_DIR/err.txt" || rc=$?
+    if [ $rc -ne 1 ] || [ -e "$TMP_DIR/allhealth-out.fit" ] || ! grep -q "no messages left" "$TMP_DIR/err.txt"; then
+        fail "file with only health messages: rc=$rc $(head -1 "$TMP_DIR/err.txt")"
     else
         pass "file with nothing left after cleaning: refused, no output"
     fi
@@ -830,10 +852,25 @@ assert 21 * n < $outsz < 21 * n + 200, ($outsz, 21 * n)
     t1=$(date +%s%N)
     ms=$(( (t1 - t0) / 1000000 ))
     outsz=$(wc -c < "$TMP_DIR/benchc-out.fit")
-    if [ $rc -eq 0 ] && [ "$ms" -lt 10000 ] && [ "$outsz" -gt $((21 * BENCH_N)) ] && [ "$outsz" -lt $((21 * BENCH_N + 300)) ]; then
-        pass "benchmark compressed timestamps: $BENCH_N records, $(( $(wc -c < "$TMP_DIR/benchc.fit") / 1000000 )) MB in, ${ms} ms"
+    # timestamps: the SDK parse of input and output must agree on every point (rollovers of the 5 bit offset included)
+    python3 "$CHECK_PY" mkraw bench-compressed "$TMP_DIR/benchc-small.fit" 3000
+    ts_ok=0
+    if "$PARSER" "$TMP_DIR/benchc-small.fit" > "$TMP_DIR/bc-in.json" 2>/dev/null \
+        && "$PARSER" "$TMP_DIR/benchc-small.fit" --strip-health "$TMP_DIR/bc-small-out.fit" > /dev/null 2>&1 \
+        && "$PARSER" "$TMP_DIR/bc-small-out.fit" > "$TMP_DIR/bc-out.json" 2>/dev/null \
+        && python3 - "$TMP_DIR/bc-in.json" "$TMP_DIR/bc-out.json" <<'PY' 2>/dev/null
+import json, sys
+a = json.load(open(sys.argv[1]))['coordinates']; b = json.load(open(sys.argv[2]))['coordinates']
+assert len(a) == len(b) == 3001, (len(a), len(b))
+assert [p['timestamp'] for p in a] == [p['timestamp'] for p in b], 'timestamps differ'
+assert [(p['lat'], p['lon']) for p in a] == [(p['lat'], p['lon']) for p in b], 'positions differ'
+assert a[0]['timestamp'] != a[-1]['timestamp']
+PY
+    then ts_ok=1; fi
+    if [ $rc -eq 0 ] && [ $ts_ok -eq 1 ] && [ "$ms" -lt 10000 ] && [ "$outsz" -gt $((21 * BENCH_N)) ] && [ "$outsz" -lt $((21 * BENCH_N + 300)) ]; then
+        pass "benchmark compressed timestamps (all 3001 timestamps of a small twin equal before/after): $BENCH_N records, $(( $(wc -c < "$TMP_DIR/benchc.fit") / 1000000 )) MB in, ${ms} ms"
     else
-        fail "benchmark compressed timestamps: rc=$rc ${ms} ms out=$outsz"
+        fail "benchmark compressed timestamps: rc=$rc ts_ok=$ts_ok ${ms} ms out=$outsz"
     fi
 
     # usage errors

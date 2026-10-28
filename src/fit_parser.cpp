@@ -1,6 +1,9 @@
 #include "fit_parser.h"
 #include "fit_validator.h"
 #include <fstream>
+#include <istream>
+#include <streambuf>
+#include <string>
 #include <stdexcept>
 #include <cmath>
 #include <algorithm>
@@ -641,32 +644,69 @@ void computeStreamStatistics(RideStatistic& stats) {
     }
 }
 
+namespace {
+// Read-only istream over a memory buffer (no copy), so the SDK decodes exactly the bytes that were validated.
+class MemoryBuf : public std::streambuf {
+public:
+    MemoryBuf(const char* data, std::size_t size) {
+        char* p = const_cast<char*>(data);
+        setg(p, p, p + size);
+    }
+protected:
+    pos_type seekoff(off_type off, std::ios_base::seekdir dir, std::ios_base::openmode) override {
+        char* target = nullptr;
+        if (dir == std::ios_base::beg) target = eback() + off;
+        else if (dir == std::ios_base::cur) target = gptr() + off;
+        else target = egptr() + off;
+        if (target < eback() || target > egptr()) return pos_type(off_type(-1));
+        setg(eback(), target, egptr());
+        return pos_type(target - eback());
+    }
+    pos_type seekpos(pos_type pos, std::ios_base::openmode which) override {
+        return seekoff(off_type(pos), std::ios_base::beg, which);
+    }
+};
+} // namespace
+
 RideStatistic FitParser::extractCoordinates() {
+    // Read the file ONCE; validate that buffer, decode that same buffer (no second open, no swap window).
+    std::string bytes;
+    {
+        std::ifstream in(filename_, std::ios::in | std::ios::binary);
+        if (!in.is_open()) {
+            throw std::runtime_error("Cannot open file: " + filename_);
+        }
+        in.seekg(0, std::ios::end);
+        const std::streamoff size = in.tellg();
+        in.seekg(0, std::ios::beg);
+        if (size <= 0) {
+            throw std::runtime_error("invalid FIT structure: empty file");
+        }
+        bytes.resize(static_cast<std::size_t>(size));
+        in.read(&bytes[0], size);
+        if (!in) {
+            throw std::runtime_error("Cannot read file: " + filename_);
+        }
+    }
     // The vendor SDK decoder is memory-unsafe on hostile definitions: check the structure first.
     {
-        const std::string reason = validateFitFile(filename_);
+        const std::string reason = validateFitStructure(reinterpret_cast<const unsigned char*>(bytes.data()), bytes.size());
         if (!reason.empty()) {
             throw std::runtime_error("invalid FIT structure: " + reason);
         }
     }
-    // Open FIT file
-    std::fstream file(filename_, std::ios::in | std::ios::binary);
-    if (!file.is_open()) {
-        throw std::runtime_error("Cannot open file: " + filename_);
-    }
-    
+    MemoryBuf membuf(bytes.data(), bytes.size());
+    std::istream file(&membuf);
+
     // Create FIT decoder
     fit::Decode decode;
     CoordinateListener listener;
     
     // Decode FIT file - SDK 21.158 API uses references
     if (!decode.Read(file, listener)) {
-        file.close();
         throw std::runtime_error("Failed to decode FIT file");
     }
     
-    file.close();
-
     RideStatistic stats;
     stats.coordinates = listener.coordinates;
     stats.deviceInfos = listener.deviceInfos;
