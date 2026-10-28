@@ -1,0 +1,35 @@
+README.md
+  s_c07eceed0105e8::t_161aa32fac2793 146-149
+src/fit_parser.cpp
+  s_c07eceed0105e8::t_cc3b231d880d88 4-6,647-670,672-690,693,698-700
+src/fit_validator.cpp
+  s_c07eceed0105e8::t_230a81e9a57cf0 9-13,80-103
+src/fit_validator.h
+  s_c07eceed0105e8::t_1391c81b68e202 13-14,20-22
+src/health_stripper.cpp
+  s_c07eceed0105e8::t_c38b18f1d0d64f 12-13,367-392,394-398,401
+src/main.cpp
+  s_c07eceed0105e8::t_c91bc5f8b32136 2,336-347
+tests/check_health_strip.py
+  s_c07eceed0105e8::t_e2a256789f0267 159-170
+tests/fuzz/fuzz.cpp
+  s_c07eceed0105e8::t_7980b26a9ea031 7-9,161,182-199,215,218-219,222
+tests/run_tests.sh
+  s_c07eceed0105e8::t_aa2ec6367a5bd3 773-774,784-790,792-799,802-809,813-815,822-824,855-871,873
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "720992779835133fd2e1b13bcff1f8da4a9aea79",
+  "prompts": {},
+  "sessions": {
+    "s_c07eceed0105e8": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "56a3316b-e1ec-456a-94bd-3b7ad6cd4f61",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "X. Koevoet <development@bikecoders.life>"
+    }
+  }
+}
