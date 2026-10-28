@@ -1,0 +1,27 @@
+src/fit_validator.cpp
+  s_c07eceed0105e8::t_854dbfbb2a0e6c 13,23,91-94,96
+src/fit_validator.h
+  s_c07eceed0105e8::t_5bb4618cc17baf 20-23
+tests/check_health_strip.py
+  s_c07eceed0105e8::t_5a63a008567d5a 159-168
+tests/fuzz/fuzz.cpp
+  s_c07eceed0105e8::t_32514127c711de 9-11,195-200
+tests/run_tests.sh
+  s_c07eceed0105e8::t_66b353dc388645 802-816,821
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "4b2ae21969d7048107003001696fdd0d50d94e31",
+  "prompts": {},
+  "sessions": {
+    "s_c07eceed0105e8": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "56a3316b-e1ec-456a-94bd-3b7ad6cd4f61",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "X. Koevoet <development@bikecoders.life>"
+    }
+  }
+}
