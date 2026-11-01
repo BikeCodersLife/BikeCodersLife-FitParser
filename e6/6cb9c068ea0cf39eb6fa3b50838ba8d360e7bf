@@ -1,0 +1,21 @@
+README.md
+  s_de749d61e5df04::t_bc5e5e5fb1d2ae 15,104-119
+docs/RELEASING.md
+  s_de749d61e5df04::t_22f9ba7e073ffa 14
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "e66cb9c068ea0cf39eb6fa3b50838ba8d360e7bf",
+  "prompts": {},
+  "sessions": {
+    "s_de749d61e5df04": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "225824f7-3579-413d-8579-dfa254953bf8",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "X. Koevoet <development@bikecoders.life>"
+    }
+  }
+}
