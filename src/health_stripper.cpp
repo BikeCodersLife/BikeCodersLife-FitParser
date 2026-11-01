@@ -31,22 +31,24 @@ struct Tables {
     std::unordered_map<uint16_t, std::bitset<256>> keepFields;
     std::bitset<256> keepEvents;
 
-    Tables() {
-        for (const HealthKeepRule& rule : kKeepRules) {
+    template <std::size_t R, std::size_t E>
+    Tables(const HealthKeepRule (&rules)[R], const uint8_t (&events)[E]) {
+        for (const HealthKeepRule& rule : rules) {
             std::bitset<256>& set = keepFields[rule.mesg];
             for (std::size_t i = 0; i < rule.count; ++i) {
                 set.set(rule.fields[i]);
             }
         }
-        for (uint8_t e : kKeepEvents) {
+        for (uint8_t e : events) {
             keepEvents.set(e);
         }
     }
 };
 
-const Tables& tables() {
-    static const Tables t;
-    return t;
+const Tables& tables(StripMode mode) {
+    static const Tables health(kKeepRules, kKeepEvents);
+    static const Tables heartRate(kHrKeepRules, kHrKeepEvents);
+    return mode == StripMode::HeartRate ? heartRate : health;
 }
 
 uint32_t readU32(const std::string& s, std::size_t pos) {
@@ -142,8 +144,8 @@ void putU32(std::string& out, uint32_t v, bool big) {
  * full timestamp field (253), computed from the last full timestamp with the
  * rolling 5 bit offset rule, and kept definitions without a timestamp field get one.
  */
-std::string stripChunkPass(const unsigned char* d, std::size_t n, HealthStripStats& stats, bool expand) {
-    const Tables& t = tables();
+std::string stripChunkPass(const unsigned char* d, std::size_t n, HealthStripStats& stats, bool expand, StripMode mode) {
+    const Tables& t = tables(mode);
     const std::size_t hdr = d[0];
     const uint32_t dataSize = static_cast<uint32_t>(d[4]) | (static_cast<uint32_t>(d[5]) << 8)
         | (static_cast<uint32_t>(d[6]) << 16) | (static_cast<uint32_t>(d[7]) << 24);
@@ -322,18 +324,18 @@ std::string stripChunkPass(const unsigned char* d, std::size_t n, HealthStripSta
     return out;
 }
 
-std::string stripChunk(const std::string_view chunk, HealthStripStats& stats) {
+std::string stripChunk(const std::string_view chunk, HealthStripStats& stats, StripMode mode) {
     const unsigned char* d = reinterpret_cast<const unsigned char*>(chunk.data());
     try {
-        return stripChunkPass(d, chunk.size(), stats, false);
+        return stripChunkPass(d, chunk.size(), stats, false, mode);
     } catch (const NeedTimestampExpansion&) {
-        return stripChunkPass(d, chunk.size(), stats, true);
+        return stripChunkPass(d, chunk.size(), stats, true, mode);
     }
 }
 
 } // namespace
 
-std::string HealthStripper::stripBytes(const std::string& input, HealthStripStats& stats) {
+std::string HealthStripper::stripBytes(const std::string& input, HealthStripStats& stats, StripMode mode) {
     if (input.empty()) {
         throw std::runtime_error("empty input");
     }
@@ -350,7 +352,7 @@ std::string HealthStripper::stripBytes(const std::string& input, HealthStripStat
         }
         const std::string_view chunk(input.data() + pos, len);
         try {
-            output += stripChunk(chunk, stats);
+            output += stripChunk(chunk, stats, mode);
         } catch (const std::runtime_error& e) {
             if (pos == 0) {
                 throw std::runtime_error(std::string("invalid FIT structure: ") + e.what());
@@ -403,7 +405,8 @@ void HealthStripper::writeAtomically(const std::string& outputPath, const std::s
     }
 }
 
-void HealthStripper::stripFile(const std::string& inputPath, const std::string& outputPath, HealthStripStats& stats) {
+void HealthStripper::stripFile(const std::string& inputPath, const std::string& outputPath, HealthStripStats& stats,
+                               StripMode mode) {
     std::ifstream file(inputPath, std::ios::in | std::ios::binary);
     if (!file.is_open()) {
         throw std::runtime_error("Cannot open file: " + inputPath);
@@ -421,6 +424,6 @@ void HealthStripper::stripFile(const std::string& inputPath, const std::string& 
     }
     file.close();
 
-    const std::string cleaned = stripBytes(input, stats);
+    const std::string cleaned = stripBytes(input, stats, mode);
     writeAtomically(outputPath, cleaned);
 }

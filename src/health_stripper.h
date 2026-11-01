@@ -5,7 +5,18 @@
 #include <string>
 
 /**
- * Counters reported by the --strip-health mode.
+ * Which allow-list to apply.
+ *  Health: --strip-health, removes heart rate, power, cadence and every other
+ *          physiological or biomechanical value.
+ *  HeartRate: --strip-hr, removes heart rate and other body data but keeps
+ *          power, cadence, pedalling dynamics, work, e-bike motor power, standing
+ *          time and trainer resistance (bike part wear needs them).
+ * Both modes drop all developer data. HeartRate removes a subset of Health.
+ */
+enum class StripMode { Health, HeartRate };
+
+/**
+ * Counters reported by the --strip-health and --strip-hr modes.
  */
 struct HealthStripStats {
     std::size_t droppedMessages = 0;        // whole messages removed (data messages, not definitions)
@@ -44,14 +55,15 @@ public:
      * Bytes after the last valid file (padding, junk) are not copied.
      * @throws std::runtime_error when the first file is not a valid FIT
      */
-    static std::string stripBytes(const std::string& input, HealthStripStats& stats);
+    static std::string stripBytes(const std::string& input, HealthStripStats& stats, StripMode mode = StripMode::Health);
 
     /**
      * Clean a FIT file on disk. The output is written to a temporary name next
      * to outputPath and renamed only when everything succeeded.
      * @throws std::runtime_error on any failure (no output file is left)
      */
-    static void stripFile(const std::string& inputPath, const std::string& outputPath, HealthStripStats& stats);
+    static void stripFile(const std::string& inputPath, const std::string& outputPath, HealthStripStats& stats,
+                          StripMode mode = StripMode::Health);
 
     /** Write already encoded FIT bytes atomically (temp name + rename). */
     static void writeAtomically(const std::string& outputPath, const std::string& bytes);

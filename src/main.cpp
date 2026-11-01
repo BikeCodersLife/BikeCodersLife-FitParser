@@ -50,7 +50,7 @@ void setResourceLimits() {
  * Print usage information
  */
 void printUsage(const char* programName) {
-    std::cerr << "Usage: " << programName << " <input_file> [--convert <output.fit> | --strip-health <output.fit>]" << std::endl;
+    std::cerr << "Usage: " << programName << " <input_file> [--convert <output.fit> | --strip-health <output.fit> | --strip-hr <output.fit>]" << std::endl;
     std::cerr << std::endl;
     std::cerr << "Supported input formats: .fit, .gpx, .tcx" << std::endl;
     std::cerr << std::endl;
@@ -59,6 +59,8 @@ void printUsage(const char* programName) {
     std::cerr << "  <input_file> --convert <output.fit>   Convert GPX/TCX to FIT format" << std::endl;
     std::cerr << "  <input_file> --strip-health <out.fit> Remove health data (heart rate, power, cadence, ...) and all developer data;" << std::endl;
     std::cerr << "                                       FIT/GPX/TCX in, valid FIT out, JSON counters on stdout" << std::endl;
+    std::cerr << "  <input_file> --strip-hr <out.fit>     Remove heart rate and other body data and all developer data;" << std::endl;
+    std::cerr << "                                       keeps power and cadence (same table, same output rules)" << std::endl;
     std::cerr << std::endl;
     std::cerr << "Options:" << std::endl;
     std::cerr << "  --version    Show version information" << std::endl;
@@ -69,9 +71,10 @@ void printUsage(const char* programName) {
  * Print version information
  */
 void printVersion() {
-    std::cout << "BikeCodersLife FIT Parser v2.4.0" << std::endl;
+    std::cout << "BikeCodersLife FIT Parser v2.5.0" << std::endl;
     std::cout << "Built with Garmin FIT SDK + pugixml" << std::endl;
     std::cout << "Supports: FIT, GPX, TCX input | FIT, JSON output" << std::endl;
+    std::cout << "v2.5.0: --strip-hr <out.fit>: removes heart rate and other body data (HRV, respiration, SpO2, body temperature, calories, training load, zones, user profile, sleep, ...) and ALL developer data, but keeps power, cadence, pedalling dynamics, work, e-bike motor power, standing time and trainer resistance (bike part wear); same table and same fail-closed rules as --strip-health (docs/health-strip.md)" << std::endl;
     std::cout << "v2.4.0 (structure check): the plain parse mode refuses FIT files with an invalid structure (zero sized field, unknown base type, bad architecture byte, duplicate field numbers, data without definition) with exit 1 before the vendor SDK decoder sees them" << std::endl;
     std::cout << "v2.4.0: --strip-health <out.fit>: removes health data from FIT, GPX and TCX (heart rate, HRV, power and derived values, cadence, respiration, body temperature, running dynamics, pedalling dynamics, muscle oxygen, calories, training load, zones, user profile, sleep, ...) and ALL developer data; allow-list decided from the FIT SDK profile (docs/health-strip.md); output is always a valid FIT; fails closed (non-zero exit, no output file)" << std::endl;
     std::cout << "v2.3.3: GPX/TCX points without position (GlobalSat lat=0 lon=0, TCX without <Position>) are kept with their time and sensors instead of dropped; a trainer ride no longer fails with \"no valid track points\"; a ride without any position takes its distance from the device (GPX <trk><extensions><length>, TCX <DistanceMeters>)" << std::endl;
@@ -300,7 +303,8 @@ RideStatistic activityToRideStatistic(const ParsedActivity& activity) {
 }
 
 /**
- * --strip-health: write a FIT without health data.
+ * --strip-health / --strip-hr: write a FIT without health data
+ * (StripMode::Health) or without heart rate and body data (StripMode::HeartRate).
  *
  * FIT in: decoded and re-encoded through the allow-list (HealthStripper).
  * GPX/TCX in: the health values are dropped from the parsed points, the
@@ -310,11 +314,11 @@ RideStatistic activityToRideStatistic(const ParsedActivity& activity) {
  * Prints one JSON line with the counters. Throws on any failure; the output
  * file only appears (atomic rename) when everything succeeded.
  */
-int runStripHealth(const std::string& inputPath, const std::string& ext, const std::string& outputPath) {
+int runStripHealth(const std::string& inputPath, const std::string& ext, const std::string& outputPath, StripMode mode) {
     HealthStripStats stats;
 
     if (ext == ".fit") {
-        HealthStripper::stripFile(inputPath, outputPath, stats);
+        HealthStripper::stripFile(inputPath, outputPath, stats, mode);
     } else if (ext == ".gpx" || ext == ".tcx") {
         ParsedActivity activity;
         if (ext == ".gpx") {
@@ -327,6 +331,9 @@ int runStripHealth(const std::string& inputPath, const std::string& ext, const s
         for (auto& pt : activity.points) {
             pt.heart_rate = 0;
             pt.hasHeartRate = false;
+            if (mode == StripMode::HeartRate) {
+                continue; // --strip-hr keeps cadence and power
+            }
             pt.cadence = 0;
             pt.hasCadence = false;
             pt.power = 0;
@@ -362,7 +369,7 @@ int runStripHealth(const std::string& inputPath, const std::string& ext, const s
         }
         std::remove(tmpFit.c_str());
 
-        HealthStripper::writeAtomically(outputPath, HealthStripper::stripBytes(converted, stats));
+        HealthStripper::writeAtomically(outputPath, HealthStripper::stripBytes(converted, stats, mode));
     } else {
         throw std::runtime_error("Unsupported file format '" + ext + "'. Supported: .fit, .gpx, .tcx");
     }
@@ -412,14 +419,17 @@ int main(int argc, char* argv[]) {
     std::string outputPath;
     bool convertMode = false;
     bool stripHealthMode = false;
+    bool stripHrMode = false;
     for (int i = 2; i < argc; i++) {
-        if (std::strcmp(argv[i], "--strip-health") == 0) {
+        const bool health = std::strcmp(argv[i], "--strip-health") == 0;
+        const bool hr = std::strcmp(argv[i], "--strip-hr") == 0;
+        if (health || hr) {
             if (i + 1 < argc) {
                 outputPath = argv[i + 1];
-                stripHealthMode = true;
+                (health ? stripHealthMode : stripHrMode) = true;
                 i++;
             } else {
-                std::cerr << "Error: --strip-health requires an output file path" << std::endl;
+                std::cerr << "Error: " << argv[i] << " requires an output file path" << std::endl;
                 return 1;
             }
             continue;
@@ -436,14 +446,18 @@ int main(int argc, char* argv[]) {
         }
     }
 
-    if (stripHealthMode && convertMode) {
-        std::cerr << "Error: --strip-health and --convert cannot be combined" << std::endl;
+    if (stripHealthMode && stripHrMode) {
+        std::cerr << "Error: --strip-health and --strip-hr cannot be combined" << std::endl;
+        return 1;
+    }
+    if ((stripHealthMode || stripHrMode) && convertMode) {
+        std::cerr << "Error: " << (stripHealthMode ? "--strip-health" : "--strip-hr") << " and --convert cannot be combined" << std::endl;
         return 1;
     }
 
     try {
-        if (stripHealthMode) {
-            return runStripHealth(inputPath, ext, outputPath);
+        if (stripHealthMode || stripHrMode) {
+            return runStripHealth(inputPath, ext, outputPath, stripHrMode ? StripMode::HeartRate : StripMode::Health);
         }
 
         if (ext == ".fit") {

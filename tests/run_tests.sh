@@ -544,7 +544,7 @@ fi
 
 # ============================================================================
 echo ""
-echo "--- Health strip (--strip-health, v2.4.0) ---"
+echo "--- Health strip (--strip-health v2.4.0, --strip-hr v2.5.0) ---"
 # Needs the test helper (cmake target health-fit-tool) next to the parser.
 HEALTH_TOOL="${HEALTH_TOOL:-$(dirname "$PARSER")/health-fit-tool}"
 CHECK_PY="${SCRIPT_DIR}/check_health_strip.py"
@@ -683,6 +683,98 @@ PY
             fail "$filename --strip-health: $(head -3 "$TMP_DIR/err.txt")"
         fi
     done
+
+    # --- --strip-hr (v2.5.0): heart rate and body data go, power and cadence stay ---
+
+    # rich FIT: only the hr column of the table survives, output decodes
+    TOTAL=$((TOTAL + 1))
+    if out=$("$PARSER" "$RICH" --strip-hr "$TMP_DIR/rich-hr.fit" 2>"$TMP_DIR/err.txt") \
+        && "$HEALTH_TOOL" dump "$TMP_DIR/rich-hr.fit" > "$TMP_DIR/rich-hr.txt" \
+        && echo "$out" | python3 -c "
+import json, sys
+d = json.loads(sys.stdin.read())
+assert d['droppedMessages'] > 0 and d['strippedFields'] > 0 and d['developerFieldsRemoved'] > 0, d
+" \
+        && $CHECK dump "$TMP_DIR/rich-hr.txt" --hr > "$TMP_DIR/check.txt" 2>&1; then
+        pass "rich FIT --strip-hr: only the hr column survives, all developer data gone [$(cat "$TMP_DIR/check.txt")]"
+    else
+        fail "rich FIT --strip-hr: $(cat "$TMP_DIR/check.txt" "$TMP_DIR/err.txt" 2>/dev/null | head -3)"
+    fi
+
+    # rich FIT JSON view: no heart rate, power and cadence equal to the input
+    TOTAL=$((TOTAL + 1))
+    if "$PARSER" "$TMP_DIR/rich-hr.fit" > "$TMP_DIR/rich-hr.json" 2>/dev/null \
+        && $CHECK track "$TMP_DIR/rich-in.json" "$TMP_DIR/rich-hr.json" --expect-health --hr > "$TMP_DIR/check.txt" 2>&1; then
+        pass "rich FIT --strip-hr: no heart rate in the JSON, power / cadence / track unchanged [$(cat "$TMP_DIR/check.txt")]"
+    else
+        fail "rich FIT --strip-hr track: $(head -3 "$TMP_DIR/check.txt")"
+    fi
+
+    # --strip-hr keeps more than --strip-health: the health-stripped output is smaller
+    TOTAL=$((TOTAL + 1))
+    if [ "$(wc -c < "$TMP_DIR/rich-hr.fit")" -gt "$(wc -c < "$TMP_DIR/rich-out.fit")" ]; then
+        pass "rich FIT: --strip-hr output keeps more than --strip-health"
+    else
+        fail "rich FIT: --strip-hr output is not larger than the --strip-health output"
+    fi
+
+    # GPX / TCX with sensors: heart rate goes, power and cadence stay
+    for src in with-power-and-hr.gpx tcx-with-sensors.tcx; do
+        TOTAL=$((TOTAL + 1))
+        if "$PARSER" "$FIXTURES_DIR/$src" > "$TMP_DIR/src.json" 2>/dev/null \
+            && "$PARSER" "$FIXTURES_DIR/$src" --strip-hr "$TMP_DIR/src-hr.fit" > /dev/null 2>"$TMP_DIR/err.txt" \
+            && "$HEALTH_TOOL" dump "$TMP_DIR/src-hr.fit" > "$TMP_DIR/src-hr.txt" \
+            && $CHECK dump "$TMP_DIR/src-hr.txt" --hr > /dev/null 2>"$TMP_DIR/err.txt" \
+            && "$PARSER" "$TMP_DIR/src-hr.fit" > "$TMP_DIR/src-hr.json" 2>/dev/null \
+            && python3 - "$TMP_DIR/src.json" "$TMP_DIR/src-hr.json" <<'PY' 2>"$TMP_DIR/err.txt"
+import json, sys
+a = json.load(open(sys.argv[1]))['coordinates']
+b = json.load(open(sys.argv[2]))['coordinates']
+assert any('heartRate' in p for p in a), 'input has no heart rate'
+assert any('power' in p or 'cadence' in p for p in a), 'input has no power or cadence'
+assert len(a) == len(b), f'{len(a)} vs {len(b)} points'
+for x, y in zip(a, b):
+    assert 'heartRate' not in y, y
+    for k in ('power', 'cadence'):
+        assert (k in x) == (k in y) and x.get(k) == y.get(k), (k, x, y)
+    assert abs(x['lat'] - y['lat']) < 1e-5 and abs(x['lon'] - y['lon']) < 1e-5, (x, y)
+    assert x['timestamp'] == y['timestamp'], (x, y)
+PY
+        then
+            pass "$src --strip-hr → FIT without heart rate, power / cadence / positions / times unchanged"
+        else
+            fail "$src --strip-hr: $(head -3 "$TMP_DIR/err.txt")"
+        fi
+    done
+
+    # every real FIT fixture: valid output, no heart rate, power / cadence / track unchanged
+    for fit_file in "$FIXTURES_DIR"/*.fit; do
+        [ ! -f "$fit_file" ] && continue
+        TOTAL=$((TOTAL + 1))
+        filename=$(basename "$fit_file")
+        if "$PARSER" "$fit_file" --strip-hr "$TMP_DIR/real-hr.fit" > /dev/null 2>"$TMP_DIR/err.txt" \
+            && "$HEALTH_TOOL" dump "$TMP_DIR/real-hr.fit" > "$TMP_DIR/real-hr.txt" \
+            && $CHECK dump "$TMP_DIR/real-hr.txt" --hr > /dev/null 2>"$TMP_DIR/err.txt" \
+            && "$PARSER" "$fit_file" > "$TMP_DIR/real-in.json" 2>/dev/null \
+            && "$PARSER" "$TMP_DIR/real-hr.fit" > "$TMP_DIR/real-hr.json" 2>/dev/null \
+            && $CHECK track "$TMP_DIR/real-in.json" "$TMP_DIR/real-hr.json" --hr > "$TMP_DIR/check.txt" 2>"$TMP_DIR/err.txt"; then
+            pass "$filename: --strip-hr drops heart rate only ($(cat "$TMP_DIR/check.txt"))"
+        else
+            fail "$filename --strip-hr: $(head -3 "$TMP_DIR/err.txt")"
+        fi
+    done
+
+    # --strip-hr fails closed on a broken file, and cannot be combined with --strip-health
+    TOTAL=$((TOTAL + 1))
+    head -c 200 "$RICH" > "$TMP_DIR/hr-trunc.fit"
+    mkdir -p "$TMP_DIR/hrfail"
+    rc1=0; "$PARSER" "$TMP_DIR/hr-trunc.fit" --strip-hr "$TMP_DIR/hrfail/out.fit" > /dev/null 2>&1 || rc1=$?
+    rc2=0; "$PARSER" "$RICH" --strip-hr "$TMP_DIR/hrfail/a.fit" --strip-health "$TMP_DIR/hrfail/b.fit" > /dev/null 2>&1 || rc2=$?
+    if [ "$rc1" -ne 0 ] && [ "$rc2" -ne 0 ] && [ -z "$(ls -A "$TMP_DIR/hrfail")" ]; then
+        pass "--strip-hr: truncated input exits != 0 with no output; --strip-hr + --strip-health refused"
+    else
+        fail "--strip-hr fail-closed: rc1=$rc1 rc2=$rc2 files=$(ls "$TMP_DIR/hrfail" | tr '\n' ' ')"
+    fi
 
     # the table against the SDK profile itself (numbers, names, completeness, deny list of health words)
     TOTAL=$((TOTAL + 1))

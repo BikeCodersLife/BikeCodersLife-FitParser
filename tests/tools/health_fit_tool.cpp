@@ -188,12 +188,14 @@ int dump(const std::string& path) {
 //  - every KEEP row exists in the profile with that number and name
 //  - every message of the profile has a decision, every field of a kept message has a row
 //  - no KEEP row looks like health data (hard-coded deny list, independent of the table)
+//  - the --strip-hr column (9th): keeps a superset of --strip-health, and no hr KEEP row looks like
+//    heart rate or other body data (a second, shorter deny list: power and cadence may stay)
 int checkTable(const std::string& path) {
     std::ifstream in(path);
     if (!in.is_open()) {
         return 2;
     }
-    struct Row { std::string kind, mname, fname, dec; int mnum, fnum; };
+    struct Row { std::string kind, mname, fname, dec, hr; int mnum, fnum; };
     std::vector<Row> rows;
     std::string line;
     while (std::getline(in, line)) {
@@ -206,8 +208,8 @@ int checkTable(const std::string& path) {
             if (tab == std::string::npos) break;
             start = tab + 1;
         }
-        if (c.size() < 8) { std::cerr << "bad row: " << line << "\n"; return 3; }
-        rows.push_back({c[0], c[2], c[4], c[6], std::stoi(c[1]), c[3].empty() ? -1 : std::stoi(c[3])});
+        if (c.size() != 9) { std::cerr << "bad row (need 9 columns): " << line << "\n"; return 3; }
+        rows.push_back({c[0], c[2], c[4], c[6], c[8], std::stoi(c[1]), c[3].empty() ? -1 : std::stoi(c[3])});
     }
     int errors = 0;
     auto err = [&](const std::string& m) { std::cerr << "ERROR: " << m << "\n"; ++errors; };
@@ -216,9 +218,31 @@ int checkTable(const std::string& path) {
                                       "stance", "oscillation", "rmssd", "sdrr", "stroke", "strokes", "stride", "strides",
                                       "vo2", "effectiveness", "smoothness", "hemoglobin", "work", "rpe", "feel", "zone"};
     static const char* denySubstr[] = {"heart", "respirat", "calorie", "core_temp", "body_temp", "cadence", "hemoglobin"};
+    // --strip-hr: heart rate and other body data must still go
+    static const char* hrDenyWords[] = {"hr", "hrv", "calories", "stress", "spo2", "rmssd", "sdrr", "vo2", "rpe", "feel",
+                                        "zone", "hemoglobin", "stance", "oscillation", "stride", "strides", "stroke", "strokes",
+                                        "threshold"};
+    static const char* hrDenySubstr[] = {"heart", "respirat", "calorie", "core_temp", "body_temp", "hemoglobin"};
     std::map<int, std::set<int>> rowsFor;
     std::set<int> decided;
     for (const Row& r : rows) {
+        if ((r.dec != "K" && r.dec != "R") || (r.hr != "K" && r.hr != "R")) err("bad decision in row " + r.kind + " " + std::to_string(r.mnum) + " " + r.fname);
+        if (r.dec == "K" && r.hr != "K") err("kept by --strip-health but removed by --strip-hr: " + std::to_string(r.mnum) + " " + r.mname + " " + r.fname);
+        if (r.kind == "M" && r.hr != r.dec) err("message needs the same decision in both modes: " + r.mname);
+        if (r.kind == "F" && r.hr == "K") {
+            const std::string w = "_" + r.fname + "_";
+            for (const char* d : hrDenyWords) {
+                if (w.find(std::string("_") + d + "_") != std::string::npos) err("hr KEEP field looks like body data: " + std::to_string(r.mnum) + "." + r.fname + " (word " + d + ")");
+            }
+            for (const char* d : hrDenySubstr) {
+                if (r.fname.find(d) != std::string::npos) err("hr KEEP field looks like body data: " + std::to_string(r.mnum) + "." + r.fname + " (" + d + ")");
+            }
+        }
+        if (r.kind == "E" && r.hr == "K") {
+            for (const char* d : {"hr_", "heart", "recovery", "calorie"}) {
+                if (r.fname.find(d) != std::string::npos) err("hr KEEP event looks like body data: " + r.fname);
+            }
+        }
         if (r.kind == "M") {
             decided.insert(r.mnum);
             const fit::Profile::MESG* m = fit::Profile::GetMesg(static_cast<FIT_UINT16>(r.mnum));
