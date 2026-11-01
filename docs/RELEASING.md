@@ -11,7 +11,7 @@ fails. Work through this list top to bottom for every release.
 - [ ] `CMakeLists.txt` — `project(fit-parser VERSION x.y.z ...)` (this one was
       forgotten for all of v2.1.x — hence this file)
 - [ ] `tests/generate_expected.sh` if the JSON output changed, then
-      `tests/run_tests.sh` → 97/97 (with the dev-local FIT fixtures; CI has fewer)
+      `tests/run_tests.sh` → 211/211 (with the dev-local FIT fixtures; CI has fewer)
 - [ ] Commit, then push + tag (push main first, tag second):
 
 ```bash

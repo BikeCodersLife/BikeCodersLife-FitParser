@@ -12,6 +12,7 @@ High-performance C++ multi-format cycling file parser and converter. Parses FIT,
 - **Secure**: Resource limits (256MB memory, 30s CPU), file validation, path sanitization
 - **GPS Stripper**: Companion tool to trim GPS data from ride start/end for privacy
 - **Health strip** (`--strip-health`, v2.4.0): removes heart rate, power, cadence and every other physiological or biomechanical value, plus all developer data, and writes a clean FIT
+- **Heart rate strip** (`--strip-hr`, v2.5.0): removes heart rate and other body data plus all developer data, but keeps power and cadence (bike part wear), and writes a clean FIT
 
 ## Quick Start
 
@@ -99,6 +100,22 @@ fit-parser activity.tcx --convert activity.fit
 # Strip first 2000m and last 2000m of GPS data from a FIT file
 gps-stripper ride.fit stripped_ride.fit 2000 2000
 ```
+
+### Heart rate stripping
+
+```bash
+# FIT, GPX or TCX in, a FIT without heart rate and other body data out
+fit-parser ride.fit --strip-hr clean.fit
+```
+
+`--strip-hr` (v2.5.0) is the lighter sibling of `--strip-health` (below), for riders
+who share power and cadence but not body data. It uses the same table, the same
+output and the same fail-closed rules, and cannot be combined with `--strip-health`
+or `--convert`. Removed: heart rate, HRV, respiration, SpO2, body temperature,
+calories, training load, zones, user profile, sleep and monitoring data, and **all
+developer data**. Kept on top of what `--strip-health` keeps: power, cadence,
+pedalling dynamics, work, e-bike motor power, standing time and trainer resistance.
+See [`docs/health-strip.md`](docs/health-strip.md) (the "hr" column).
 
 ### Health data stripping
 
