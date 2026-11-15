@@ -1,0 +1,44 @@
+src/main.cpp
+  s_65d1a5b3526137::t_9ef622b1f93fb8 53,64-65,76,79,309-311,336-339,429,433-434,437,457-460,463-464,469-471
+README.md
+  s_65d1a5b3526137::t_93b472835b1693 16,121-136
+  s_65d1a5b3526137::t_19245e6c520cbb 137
+tests/check_health_strip.py
+  s_65d1a5b3526137::t_b4bd4ab06af6ad 4-5,8,12,28-30,33,39-40,50-51,84,87,90-92,159-191,302-307,310,314
+docs/RELEASING.md
+  s_65d1a5b3526137::t_93b472835b1693 14
+docs/health-strip-table.tsv
+  s_65d1a5b3526137::t_9cc66f7fc7186d 1-656
+src/health_table.inc
+  s_65d1a5b3526137::t_eb2297eeb77791 3-4,44-63,106-127,131
+src/health_stripper.cpp
+  s_65d1a5b3526137::t_9ef622b1f93fb8 51-57
+docs/health-strip.md
+  s_65d1a5b3526137::t_eb2297eeb77791 1,7,13-16,39-47,51-54,58-66,70-74,78-81,85-89,93-102,106-263,267-391,395-418,422-507,511-531,535-555,559-565,569-579,583-588,592-601,605-621,625-674
+tests/tools/health_fit_tool.cpp
+  s_65d1a5b3526137::t_230903692ebf9e 193-195,201,214-215,229-235,239-252,296
+tests/run_tests.sh
+  s_65d1a5b3526137::t_44558b1bdc1ba9 779-896
+src/health_stripper.h
+  s_65d1a5b3526137::t_9ef622b1f93fb8 14-17,19,22
+tools/gen_health_table.py
+  s_65d1a5b3526137::t_eb2297eeb77791 19-20,32,34,36,39-40,42,45-47,49,51-53,63-64,66-68,70,75-76,78,86,92-94,96,102,108-111,135-141,145-148,150
+CMakeLists.txt
+  s_65d1a5b3526137::t_9ef622b1f93fb8 2
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "865adb9ffdf5507d8f0c98780f80a1ad966e869b",
+  "prompts": {},
+  "sessions": {
+    "s_65d1a5b3526137": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "7a35b1d3-6be0-44c3-8b9c-2bc946ab18be",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "X. Koevoet <development@bikecoders.life>"
+    }
+  }
+}
