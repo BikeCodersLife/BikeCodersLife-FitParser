@@ -190,12 +190,15 @@ int dump(const std::string& path) {
 //  - no KEEP row looks like health data (hard-coded deny list, independent of the table)
 //  - the --strip-hr column (9th): keeps a superset of --strip-health, and no hr KEEP row looks like
 //    heart rate or other body data (a second, shorter deny list: power and cadence may stay)
+//  - the --strip-power column (10th): keeps a superset of --strip-health, and no power KEEP row looks like
+//    power, cadence or weight (a third deny list: heart rate and HRV may stay); a whole message may differ
+//    from --strip-health only when it is heart rate data (hrv)
 int checkTable(const std::string& path) {
     std::ifstream in(path);
     if (!in.is_open()) {
         return 2;
     }
-    struct Row { std::string kind, mname, fname, dec, hr; int mnum, fnum; };
+    struct Row { std::string kind, mname, fname, dec, hr, power; int mnum, fnum; };
     std::vector<Row> rows;
     std::string line;
     while (std::getline(in, line)) {
@@ -208,8 +211,8 @@ int checkTable(const std::string& path) {
             if (tab == std::string::npos) break;
             start = tab + 1;
         }
-        if (c.size() != 9) { std::cerr << "bad row (need 9 columns): " << line << "\n"; return 3; }
-        rows.push_back({c[0], c[2], c[4], c[6], c[8], std::stoi(c[1]), c[3].empty() ? -1 : std::stoi(c[3])});
+        if (c.size() != 10) { std::cerr << "bad row (need 10 columns): " << line << "\n"; return 3; }
+        rows.push_back({c[0], c[2], c[4], c[6], c[8], c[9], std::stoi(c[1]), c[3].empty() ? -1 : std::stoi(c[3])});
     }
     int errors = 0;
     auto err = [&](const std::string& m) { std::cerr << "ERROR: " << m << "\n"; ++errors; };
@@ -223,10 +226,30 @@ int checkTable(const std::string& path) {
                                         "zone", "hemoglobin", "stance", "oscillation", "stride", "strides", "stroke", "strokes",
                                         "threshold"};
     static const char* hrDenySubstr[] = {"heart", "respirat", "calorie", "core_temp", "body_temp", "hemoglobin"};
+    // --strip-power: power, cadence, pedalling dynamics, weight and what is worked out from them must still go
+    static const char* powerDenyWords[] = {"power", "cadence", "watts", "torque", "pco", "balance", "smoothness",
+                                           "effectiveness", "work", "cycles", "resistance", "motor", "stand", "phase",
+                                           "calories", "threshold", "weight", "tss", "stroke", "strokes"};
+    static const char* powerDenySubstr[] = {"power", "cadence", "calorie", "weight", "torque"};
+    // whole messages that --strip-power keeps although --strip-health drops them: heart rate data only
+    static const std::set<int> powerExtraMesgs = {78}; // hrv: beat to beat intervals
     std::map<int, std::set<int>> rowsFor;
     std::set<int> decided;
     for (const Row& r : rows) {
-        if ((r.dec != "K" && r.dec != "R") || (r.hr != "K" && r.hr != "R")) err("bad decision in row " + r.kind + " " + std::to_string(r.mnum) + " " + r.fname);
+        if ((r.dec != "K" && r.dec != "R") || (r.hr != "K" && r.hr != "R") || (r.power != "K" && r.power != "R")) err("bad decision in row " + r.kind + " " + std::to_string(r.mnum) + " " + r.fname);
+        if (r.dec == "K" && r.power != "K") err("kept by --strip-health but removed by --strip-power: " + std::to_string(r.mnum) + " " + r.mname + " " + r.fname);
+        if (r.kind == "M" && r.power != r.dec && !(r.power == "K" && powerExtraMesgs.count(r.mnum))) err("message needs the same decision in --strip-power: " + r.mname);
+        if ((r.kind == "F" || r.kind == "M") && r.power == "K" && r.dec != "K") {
+            const std::string name = r.kind == "F" ? r.fname : r.mname;
+            const std::string w = "_" + name + "_";
+            for (const char* d : powerDenyWords) {
+                if (w.find(std::string("_") + d + "_") != std::string::npos) err("power KEEP row looks like power data: " + std::to_string(r.mnum) + "." + name + " (word " + d + ")");
+            }
+            for (const char* d : powerDenySubstr) {
+                if (name.find(d) != std::string::npos) err("power KEEP row looks like power data: " + std::to_string(r.mnum) + "." + name + " (" + d + ")");
+            }
+        }
+        if (r.kind == "E" && r.power != r.dec) err("event needs the same decision in --strip-power: " + r.fname);
         if (r.dec == "K" && r.hr != "K") err("kept by --strip-health but removed by --strip-hr: " + std::to_string(r.mnum) + " " + r.mname + " " + r.fname);
         if (r.kind == "M" && r.hr != r.dec) err("message needs the same decision in both modes: " + r.mname);
         if (r.kind == "F" && r.hr == "K") {
@@ -270,7 +293,7 @@ int checkTable(const std::string& path) {
         const fit::Profile::MESG& m = fit::Profile::mesgs[i];
         if (!decided.count(m.num)) err("profile message " + std::to_string(m.num) + " " + m.name + " has no decision");
         bool kept = false;
-        for (const Row& r : rows) if (r.kind == "M" && r.mnum == m.num && r.dec == "K") kept = true;
+        for (const Row& r : rows) if (r.kind == "M" && r.mnum == m.num && (r.dec == "K" || r.power == "K")) kept = true;
         if (!kept) continue;
         for (int j = 0; j < m.numFields; ++j) {
             if (!rowsFor[m.num].count(m.fields[j].num)) err("field " + std::to_string(m.num) + "." + m.fields[j].name + " of a kept message has no row");

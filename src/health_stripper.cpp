@@ -48,7 +48,13 @@ struct Tables {
 const Tables& tables(StripMode mode) {
     static const Tables health(kKeepRules, kKeepEvents);
     static const Tables heartRate(kHrKeepRules, kHrKeepEvents);
-    return mode == StripMode::HeartRate ? heartRate : health;
+    static const Tables power(kPowerKeepRules, kPowerKeepEvents);
+    switch (mode) {
+        case StripMode::HeartRate: return heartRate;
+        case StripMode::Power: return power;
+        case StripMode::Health: break;
+    }
+    return health;
 }
 
 uint32_t readU32(const std::string& s, std::size_t pos) {

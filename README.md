@@ -13,6 +13,7 @@ High-performance C++ multi-format cycling file parser and converter. Parses FIT,
 - **GPS Stripper**: Companion tool to trim GPS data from ride start/end for privacy
 - **Health strip** (`--strip-health`, v2.4.0): removes heart rate, power, cadence and every other physiological or biomechanical value, plus all developer data, and writes a clean FIT
 - **Heart rate strip** (`--strip-hr`, v2.5.0): removes heart rate and other body data plus all developer data, but keeps power and cadence (bike part wear), and writes a clean FIT
+- **Power strip** (`--strip-power`, v2.6.0): removes power, cadence and weight plus all developer data, but keeps heart rate, HRV and time in heart rate zones, and writes a clean FIT
 
 ## Quick Start
 
@@ -116,6 +117,23 @@ calories, training load, zones, user profile, sleep and monitoring data, and **a
 developer data**. Kept on top of what `--strip-health` keeps: power, cadence,
 pedalling dynamics, work, e-bike motor power, standing time and trainer resistance.
 See [`docs/health-strip.md`](docs/health-strip.md) (the "hr" column).
+
+### Power stripping
+
+```bash
+# FIT, GPX or TCX in, a FIT without power, cadence and weight out
+fit-parser ride.fit --strip-power clean.fit
+```
+
+`--strip-power` (v2.6.0) is the other sibling of `--strip-health`, for riders who
+share heart rate but not power. Same table, same output, same fail-closed rules; it
+cannot be combined with `--strip-health`, `--strip-hr` or `--convert`. Removed: power,
+cadence, pedalling dynamics, work, e-bike motor power, training load, calories, power
+zones, user profile (weight), and **all developer data**. Kept on top of what
+`--strip-health` keeps: heart rate (per point, and avg / max / min per lap and session),
+HRV (`rmssd_hrv`, `sdrr_hrv`, the beat to beat `hrv` message) and time in heart rate zones.
+GPX and TCX lose power and cadence and keep heart rate.
+See [`docs/health-strip.md`](docs/health-strip.md) (the "power" column).
 
 ### Health data stripping
 

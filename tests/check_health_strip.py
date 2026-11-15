@@ -1,14 +1,15 @@
 #!/usr/bin/env python3
 """Checks used by tests/run_tests.sh for fit-parser --strip-health.
 
-  check_health_strip.py dump <dump.txt> [--hr]       the dump of a stripped file obeys docs/health-strip-table.tsv
-        (--hr: the --strip-hr column)
+  check_health_strip.py dump <dump.txt> [--hr|--power]  the dump of a stripped file obeys docs/health-strip-table.tsv
+        (--hr: the --strip-hr column, --power: the --strip-power column)
   check_health_strip.py mkraw compressed|unknown|bench <out.fit> [records]
         hand-built FIT files (compressed timestamp headers, unknown message 65300 + unknown record field 200, big track)
-  check_health_strip.py track <in.json> <out.json> [--expect-health] [--identical] [--hr]
+  check_health_strip.py track <in.json> <out.json> [--expect-health] [--identical] [--hr|--power]
         the JSON of the stripped file has the same track (and non-health summary) as the input
         and no heart rate / power / cadence anywhere
         (--hr: no heart rate anywhere; power and cadence equal to the input, and present when the input had them)
+        (--power: no power or cadence anywhere; heart rate equal to the input, and present when the input had it)
 """
 import json
 import os
@@ -24,17 +25,19 @@ HEALTH_SUMMARY_MARKERS = ("heartrate", "power", "cadence", "coasting")
 # --strip-hr: only heart rate goes from the JSON view
 HR_COORD_KEYS = {"heartRate"}
 HR_SUMMARY_MARKERS = ("heartrate",)
+# --strip-power: power and cadence (and what is worked out from them) go from the JSON view
+POWER_COORD_KEYS = {"power", "cadence"}
+POWER_SUMMARY_MARKERS = ("power", "cadence", "coasting")
 
 
-def load_table(hr=False):
+def load_table(mode="health"):
     keep_fields = {}
     keep_events = set()
     for line in open(TSV, encoding="utf-8"):
         if line.startswith("#") or not line.strip():
             continue
-        kind, mnum, _mname, fnum, _fname, _units, dec, _reason, hr_dec = line.rstrip("\n").split("\t")
-        if hr:
-            dec = hr_dec
+        kind, mnum, _mname, fnum, _fname, _units, dec, _reason, hr_dec, power_dec = line.rstrip("\n").split("\t")
+        dec = {"health": dec, "hr": hr_dec, "power": power_dec}[mode]
         if kind == "M" and dec == "K":
             keep_fields.setdefault(int(mnum), set())
         elif kind == "F" and dec == "K":
@@ -44,8 +47,8 @@ def load_table(hr=False):
     return keep_fields, keep_events
 
 
-def check_dump(path, hr=False):
-    keep_fields, keep_events = load_table(hr)
+def check_dump(path, mode="health"):
+    keep_fields, keep_events = load_table(mode)
     seen = set()
     n = 0
     for line in open(path, encoding="utf-8"):
@@ -78,11 +81,14 @@ def strip_coord(c, keys=HEALTH_COORD_KEYS):
     return {k: v for k, v in c.items() if k not in keys}
 
 
-def check_track(in_json, out_json, expect_health, identical, hr=False):
+def check_track(in_json, out_json, expect_health, identical, mode="health"):
     a = json.load(open(in_json))
     b = json.load(open(out_json))
-    if hr:
+    if mode == "hr":
         check_track_hr(a, b, expect_health)
+        return
+    if mode == "power":
+        check_track_power(a, b, expect_health)
         return
     if len(a["coordinates"]) != len(b["coordinates"]):
         sys.exit("point count %d != %d" % (len(a["coordinates"]), len(b["coordinates"])))
@@ -148,6 +154,39 @@ def check_track_hr(a, b, expect_health):
         if a.get(k) != b.get(k):
             sys.exit("top-level %s differs" % k)
     print("%d points, no heart rate, power/cadence kept on %d points, rest equal" % (len(a["coordinates"]), kept))
+
+
+def check_track_power(a, b, expect_health):
+    if len(a["coordinates"]) != len(b["coordinates"]):
+        sys.exit("point count %d != %d" % (len(a["coordinates"]), len(b["coordinates"])))
+    if expect_health:
+        if not any("heartRate" in c for c in a["coordinates"]):
+            sys.exit("input had no heart rate: the test would prove nothing")
+        if not any("power" in c or "cadence" in c for c in a["coordinates"]):
+            sys.exit("input had no power or cadence: the test would prove nothing")
+    kept = 0
+    for i, (ca, cb) in enumerate(zip(a["coordinates"], b["coordinates"])):
+        if set(cb) & POWER_COORD_KEYS:
+            sys.exit("point %d still has %s" % (i, sorted(set(cb) & POWER_COORD_KEYS)))
+        if strip_coord(ca, POWER_COORD_KEYS) != cb:
+            sys.exit("point %d differs: %s vs %s" % (i, strip_coord(ca, POWER_COORD_KEYS), cb))
+        kept += 1 if "heartRate" in cb else 0
+    sa = a.get("summary", {})
+    sb = b.get("summary", {})
+    for k in sb:
+        if any(m in k.lower() for m in POWER_SUMMARY_MARKERS):
+            sys.exit("summary key %s survived" % k)
+    for k, v in sa.items():
+        if any(m in k.lower() for m in POWER_SUMMARY_MARKERS):
+            continue
+        if sb.get(k) != v:
+            sys.exit("summary %s differs: %r vs %r" % (k, v, sb.get(k)))
+    for k in set(a) | set(b):
+        if k in ("coordinates", "summary"):
+            continue
+        if a.get(k) != b.get(k):
+            sys.exit("top-level %s differs" % k)
+    print("%d points, no power or cadence, heart rate kept on %d points, rest equal" % (len(a["coordinates"]), kept))
 
 
 def crc16(data, crc=0):
@@ -260,13 +299,19 @@ def make_raw(kind, out, n):
         f.write(frame(d))
 
 
+def mode_of(argv):
+    if "--hr" in argv and "--power" in argv:
+        sys.exit("--hr and --power cannot be combined")
+    return "hr" if "--hr" in argv else "power" if "--power" in argv else "health"
+
+
 def main():
     if len(sys.argv) >= 3 and sys.argv[1] == "dump":
-        check_dump(sys.argv[2], "--hr" in sys.argv)
+        check_dump(sys.argv[2], mode_of(sys.argv))
     elif len(sys.argv) >= 4 and sys.argv[1] == "mkraw":
         make_raw(sys.argv[2], sys.argv[3], int(sys.argv[4]) if len(sys.argv) > 4 else 0)
     elif len(sys.argv) >= 4 and sys.argv[1] == "track":
-        check_track(sys.argv[2], sys.argv[3], "--expect-health" in sys.argv, "--identical" in sys.argv, "--hr" in sys.argv)
+        check_track(sys.argv[2], sys.argv[3], "--expect-health" in sys.argv, "--identical" in sys.argv, mode_of(sys.argv))
     else:
         sys.exit(__doc__)
 

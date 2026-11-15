@@ -11,12 +11,15 @@
  *  HeartRate: --strip-hr, removes heart rate and other body data but keeps
  *          power, cadence, pedalling dynamics, work, e-bike motor power, standing
  *          time and trainer resistance (bike part wear needs them).
- * Both modes drop all developer data. HeartRate removes a subset of Health.
+ *  Power: --strip-power (v2.6.0), removes power, cadence, pedalling dynamics,
+ *          weight and what is worked out from them, but keeps heart rate, HRV
+ *          (including the beat to beat hrv message) and time in heart rate zones.
+ * Every mode drops all developer data. HeartRate and Power each remove a subset of Health.
  */
-enum class StripMode { Health, HeartRate };
+enum class StripMode { Health, HeartRate, Power };
 
 /**
- * Counters reported by the --strip-health and --strip-hr modes.
+ * Counters reported by the --strip-health, --strip-hr and --strip-power modes.
  */
 struct HealthStripStats {
     std::size_t droppedMessages = 0;        // whole messages removed (data messages, not definitions)
