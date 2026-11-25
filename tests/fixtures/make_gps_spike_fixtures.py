@@ -22,6 +22,9 @@ a pure latitude offset (1 degree = 111195.08 m with the parser's Earth radius
                             <maxspeed> 9.0 m/s = 32.4 km/h) with a lag-then-
                             catch-up burst 40, 60, 72, 84, 84, 96, 171 km/h, then
                             24 km/h, like dev rides 1010 / 1117.
+  globalsat-doubled-seconds.gpx  GlobalSat-style 1 Hz log at 27 km/h where some
+                            stamps are a second late (5, 7, 7, 8, ... and
+                            300, 302, 303, 303, ...), like dev ride 50.
 """
 import math
 import os
@@ -122,3 +125,15 @@ cruise = [(2, kmh(30) * 2)] * 60
 burst = [(2, kmh(v) * 2) for v in (40, 60, 72, 84, 84, 96, 171)] + [(2, kmh(24) * 2)] * 5
 write_gpx('globalsat-catchup.gpx', track(cruise + burst + cruise),
           creator='GlobalSat GS-Sport PC Software', trk_ext='<maxspeed>9.000000</maxspeed>')
+
+# 5. GlobalSat doubled seconds (dev ride 50, a 2014 GS-Sport log): a fix every
+#    second at 27 km/h, but some stamps are written a second late. First half:
+#    one in three, so the log reads ..., 5, 7, 7, 8, 10, 10, ... (a skipped
+#    second, then the same second twice). Second half: two late in a row, so
+#    the free second is two fixes back: ..., 300, 302, 303, 303, 304, ...
+pts = []
+for i in range(600):
+    late = i % 3 == 1 if i < 300 else i % 5 in (1, 2)
+    written = i + 1 if late else i
+    pts.append((written, LAT0 + i * kmh(27) / M_PER_DEG_LAT, LON0, i * kmh(27)))
+write_gpx('globalsat-doubled-seconds.gpx', pts, creator='GlobalSat GS-Sport PC Software')

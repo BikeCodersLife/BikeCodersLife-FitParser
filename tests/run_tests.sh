@@ -453,6 +453,31 @@ else
     fail "globalsat-catchup.gpx: GPS catch-up burst still sets the max"
 fi
 
+# GlobalSat doubled seconds (dev ride 50, 2014): a fix every second, but one
+# stamp in three is a second late (5, 7, 7, 8, ...). Unrepaired, the fix after
+# the skipped second got 1 s of road over 2 s (half speed) and its twin no
+# speed at all. Repaired, every fix has its own second and the true 27 km/h,
+# directly and after conversion to FIT.
+TOTAL=$((TOTAL + 1))
+if "$PARSER" "$FIXTURES_DIR/globalsat-doubled-seconds.gpx" 2>/dev/null > "$TMP_DIR/gsd.json" \
+    && "$PARSER" "$FIXTURES_DIR/globalsat-doubled-seconds.gpx" --convert "$TMP_DIR/gsd.fit" 2>/dev/null \
+    && "$PARSER" "$TMP_DIR/gsd.fit" 2>/dev/null > "$TMP_DIR/gsd-fit.json" \
+    && python3 - "$TMP_DIR/gsd.json" "$TMP_DIR/gsd-fit.json" <<'PY' 2>/dev/null
+import json, sys
+for path in sys.argv[1:]:
+    c = json.load(open(path))['coordinates']
+    assert len(c) == 600, (path, len(c))
+    stamps = [p['timestamp'] for p in c]
+    assert len(set(stamps)) == 600, (path, 'doubled stamps left', 600 - len(set(stamps)))
+    speeds = [p.get('speed') for p in c[1:]]
+    assert all(s is not None and 26.5 <= s <= 27.5 for s in speeds), (path, sorted(set(speeds))[:5])
+PY
+then
+    pass "globalsat-doubled-seconds.gpx: each fix gets its own second and the true speed (GPX + FIT)"
+else
+    fail "globalsat-doubled-seconds.gpx: doubled seconds still halve the speed"
+fi
+
 # Clean rides: the spike filter must not change a single byte of their output.
 # Baselines are the v2.3.1 output of each file.
 for clean in fast-descent.gpx with-power-and-hr.gpx tcx-with-sensors.tcx tcx-no-sensors.tcx \

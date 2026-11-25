@@ -1,4 +1,5 @@
 #include "gpx_parser.h"
+#include "timestamp_repair.h"
 #include <pugixml.hpp>
 #include <stdexcept>
 #include <cmath>
@@ -281,6 +282,10 @@ ParsedActivity GpxParser::parse() {
     if (activity.points.empty()) {
         throw std::runtime_error("GPX file contains no valid track points");
     }
+
+    // A stamp written a second late doubles one second and skips the one
+    // before it: give it back its own second (see timestamp_repair.h).
+    repairDoubledSeconds(activity.points);
 
     // A ride without any position (trainer): its distance is the device's
     // track total, spread over the points by time so the per-point distance

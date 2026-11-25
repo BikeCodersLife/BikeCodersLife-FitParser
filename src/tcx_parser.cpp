@@ -1,4 +1,5 @@
 #include "tcx_parser.h"
+#include "timestamp_repair.h"
 #include <pugixml.hpp>
 #include <stdexcept>
 #include <cmath>
@@ -283,6 +284,10 @@ ParsedActivity TcxParser::parse() {
     if (activity.points.empty()) {
         throw std::runtime_error("TCX file contains no valid track points");
     }
+
+    // A stamp written a second late doubles one second and skips the one
+    // before it: give it back its own second (see timestamp_repair.h).
+    repairDoubledSeconds(activity.points);
 
     activity.totalDistanceM = cumulativeDistance;
     activity.totalAscentM = totalAscent;
