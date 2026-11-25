@@ -73,9 +73,10 @@ void printUsage(const char* programName) {
  * Print version information
  */
 void printVersion() {
-    std::cout << "BikeCodersLife FIT Parser v2.6.0" << std::endl;
+    std::cout << "BikeCodersLife FIT Parser v2.6.1" << std::endl;
     std::cout << "Built with Garmin FIT SDK + pugixml" << std::endl;
     std::cout << "Supports: FIT, GPX, TCX input | FIT, JSON output" << std::endl;
+    std::cout << "v2.6.1: GPX/TCX: a doubled second (an old GPS unit wrote one fix a second late) moves to the nearest free second, at most 4 points away, so point speeds are no longer halved there" << std::endl;
     std::cout << "v2.6.0: --strip-power <out.fit>: removes power, cadence, pedalling dynamics, work, e-bike motor power, training load, calories, power zones, user profile (weight) and ALL developer data, but keeps heart rate (per point and avg / max / min per lap and session), HRV (rmssd_hrv, sdrr_hrv, the beat to beat hrv message) and time in heart rate zones; GPX/TCX lose power and cadence and keep heart rate; same table and same fail-closed rules as --strip-health (docs/health-strip.md)" << std::endl;
     std::cout << "v2.5.0: --strip-hr <out.fit>: removes heart rate and other body data (HRV, respiration, SpO2, body temperature, calories, training load, zones, user profile, sleep, ...) and ALL developer data, but keeps power, cadence, pedalling dynamics, work, e-bike motor power, standing time and trainer resistance (bike part wear); same table and same fail-closed rules as --strip-health (docs/health-strip.md)" << std::endl;
     std::cout << "v2.4.0 (structure check): the plain parse mode refuses FIT files with an invalid structure (zero sized field, unknown base type, bad architecture byte, duplicate field numbers, data without definition) with exit 1 before the vendor SDK decoder sees them" << std::endl;
