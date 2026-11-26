@@ -1,0 +1,21 @@
+CMakeLists.txt
+  s_1725fbad7628af::t_ebff3b10565554 2
+src/main.cpp
+  s_1725fbad7628af::t_bd6473ac37e4a7 76-77
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "7a3561064f7ee783493dd71a6c760e957af32f0b",
+  "prompts": {},
+  "sessions": {
+    "s_1725fbad7628af": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "08e01735-2c1a-4ecc-a5b5-e1b677a5f109",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "X. Koevoet <development@bikecoders.life>"
+    }
+  }
+}
