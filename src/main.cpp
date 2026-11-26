@@ -73,7 +73,8 @@ void printUsage(const char* programName) {
  * Print version information
  */
 void printVersion() {
-    std::cout << "BikeCodersLife FIT Parser v2.6.1" << std::endl;
+    std::cout << "BikeCodersLife FIT Parser v2.6.2" << std::endl;
+    std::cout << "v2.6.2: GPX/TCX: a log with several fixes inside every second (Road Grand Tours, 5 Hz with millisecond stamps) keeps one fix per second, so point speeds are no longer cut to a fifth" << std::endl;
     std::cout << "Built with Garmin FIT SDK + pugixml" << std::endl;
     std::cout << "Supports: FIT, GPX, TCX input | FIT, JSON output" << std::endl;
     std::cout << "v2.6.1: GPX/TCX: a doubled second (an old GPS unit wrote one fix a second late) moves to the nearest free second, at most 4 points away, so point speeds are no longer halved there" << std::endl;
