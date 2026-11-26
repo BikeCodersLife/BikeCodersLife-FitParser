@@ -25,6 +25,12 @@ a pure latitude offset (1 degree = 111195.08 m with the parser's Earth radius
   globalsat-doubled-seconds.gpx  GlobalSat-style 1 Hz log at 27 km/h where some
                             stamps are a second late (5, 7, 7, 8, ... and
                             300, 302, 303, 303, ...), like dev ride 50.
+  subsecond-shared-seconds.gpx  Road Grand Tours-style log at 27 km/h: 4 or 5
+                            fixes inside every second, all with the same whole
+                            second stamp (12, 12, 12, 12, 13, ...), like dev
+                            ride 613.
+  subsecond-fractional.gpx  5 Hz log at 27 km/h with millisecond stamps
+                            (00.000, 00.200, 00.400, ...).
 """
 import math
 import os
@@ -44,6 +50,10 @@ def iso(sec):
     return (T0 + timedelta(seconds=sec)).strftime('%Y-%m-%dT%H:%M:%SZ')
 
 
+def iso_ms(sec):
+    return (T0 + timedelta(seconds=sec)).strftime('%Y-%m-%dT%H:%M:%S.%f')[:-3] + 'Z'
+
+
 def track(segments):
     """segments: list of (dt_s, metres) steps north. Returns [(t, lat, lon, cum_m)]."""
     pts = [(0, LAT0, LON0, 0.0)]
@@ -55,7 +65,7 @@ def track(segments):
     return pts
 
 
-def write_gpx(name, pts, creator='BikeCodersLife fixture generator', trk_ext=''):
+def write_gpx(name, pts, creator='BikeCodersLife fixture generator', trk_ext='', stamp=iso):
     lines = ['<?xml version="1.0" encoding="UTF-8"?>',
              f'<gpx xmlns="http://www.topografix.com/GPX/1/1" version="1.1" creator="{creator}">',
              '  <trk>',
@@ -64,7 +74,7 @@ def write_gpx(name, pts, creator='BikeCodersLife fixture generator', trk_ext='')
         lines.append(f'    <extensions>{trk_ext}</extensions>')
     lines.append('    <trkseg>')
     for t, lat, lon, _ in pts:
-        lines.append(f'      <trkpt lat="{lat:.7f}" lon="{lon:.7f}"><ele>5</ele><time>{iso(t)}</time></trkpt>')
+        lines.append(f'      <trkpt lat="{lat:.7f}" lon="{lon:.7f}"><ele>5</ele><time>{stamp(t)}</time></trkpt>')
     lines += ['    </trkseg>', '  </trk>', '</gpx>', '']
     with open(os.path.join(HERE, name), 'w') as f:
         f.write('\n'.join(lines))
@@ -137,3 +147,18 @@ for i in range(600):
     written = i + 1 if late else i
     pts.append((written, LAT0 + i * kmh(27) / M_PER_DEG_LAT, LON0, i * kmh(27)))
 write_gpx('globalsat-doubled-seconds.gpx', pts, creator='GlobalSat GS-Sport PC Software')
+
+# 6. Sub-second log with whole-second stamps (dev ride 613, a Road Grand Tours
+#    export): 4 or 5 fixes inside every second at 27 km/h, and every fix of a
+#    second carries that same whole second (12, 12, 12, 12, 13, 13, ...).
+pts = []
+for sec in range(600):
+    n = 4 if sec % 5 == 0 else 5
+    for k in range(n):
+        t = sec + k / n
+        pts.append((sec, LAT0 + t * kmh(27) / M_PER_DEG_LAT, LON0, t * kmh(27)))
+write_gpx('subsecond-shared-seconds.gpx', pts, creator='Road Grand Tours - https://www.roadgrandtours.com')
+
+# 7. 5 Hz log with millisecond stamps: 00.000, 00.200, 00.400, ... at 27 km/h.
+pts = [(i / 5, LAT0 + (i / 5) * kmh(27) / M_PER_DEG_LAT, LON0, (i / 5) * kmh(27)) for i in range(3000)]
+write_gpx('subsecond-fractional.gpx', pts, stamp=iso_ms)

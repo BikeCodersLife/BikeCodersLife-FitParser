@@ -478,6 +478,33 @@ else
     fail "globalsat-doubled-seconds.gpx: doubled seconds still halve the speed"
 fi
 
+# Sub-second logs (dev ride 613, a Road Grand Tours export, and a 5 Hz log with
+# millisecond stamps): 4 or 5 fixes share every whole second. Unfixed, only the
+# first fix of a second got a speed, from a fifth of the road over 1 s (5.4
+# instead of 27 km/h). Fixed, each second keeps one fix with the true 27 km/h,
+# directly and after conversion to FIT.
+for sub in subsecond-shared-seconds subsecond-fractional; do
+    TOTAL=$((TOTAL + 1))
+    if "$PARSER" "$FIXTURES_DIR/$sub.gpx" 2>/dev/null > "$TMP_DIR/$sub.json" \
+        && "$PARSER" "$FIXTURES_DIR/$sub.gpx" --convert "$TMP_DIR/$sub.fit" 2>/dev/null \
+        && "$PARSER" "$TMP_DIR/$sub.fit" 2>/dev/null > "$TMP_DIR/$sub-fit.json" \
+        && python3 - "$TMP_DIR/$sub.json" "$TMP_DIR/$sub-fit.json" <<'PY' 2>/dev/null
+import json, sys
+for path in sys.argv[1:]:
+    c = json.load(open(path))['coordinates']
+    assert len(c) == 600, (path, len(c))
+    stamps = [p['timestamp'] for p in c]
+    assert len(set(stamps)) == 600, (path, 'shared stamps left', 600 - len(set(stamps)))
+    speeds = [p.get('speed') for p in c[1:]]
+    assert all(s is not None and 26.5 <= s <= 27.5 for s in speeds), (path, sorted(set(speeds))[:5])
+PY
+    then
+        pass "$sub.gpx: one fix per second with the true speed (GPX + FIT)"
+    else
+        fail "$sub.gpx: fixes that share a second still cut the speed"
+    fi
+done
+
 # Clean rides: the spike filter must not change a single byte of their output.
 # Baselines are the v2.3.1 output of each file.
 for clean in fast-descent.gpx with-power-and-hr.gpx tcx-with-sensors.tcx tcx-no-sensors.tcx \

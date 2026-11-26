@@ -283,8 +283,9 @@ ParsedActivity GpxParser::parse() {
         throw std::runtime_error("GPX file contains no valid track points");
     }
 
-    // A stamp written a second late doubles one second and skips the one
-    // before it: give it back its own second (see timestamp_repair.h).
+    // A sub-second log keeps one fix per second, then a stamp written a
+    // second late gets back its own second (see timestamp_repair.h).
+    collapseSharedSeconds(activity.points);
     repairDoubledSeconds(activity.points);
 
     // A ride without any position (trainer): its distance is the device's
