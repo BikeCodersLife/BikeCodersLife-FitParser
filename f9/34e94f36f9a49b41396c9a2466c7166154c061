@@ -1,0 +1,32 @@
+src/tcx_parser.cpp
+  s_1725fbad7628af::t_ae977024eb0d62 288-290
+tests/fixtures/make_gps_spike_fixtures.py
+  s_1725fbad7628af::t_89d056440dbca3 28-33,53-56,68,77,150-164
+tests/fixtures/subsecond-fractional.gpx
+  s_1725fbad7628af::t_89d056440dbca3 1-3008
+tests/fixtures/subsecond-shared-seconds.gpx
+  s_1725fbad7628af::t_89d056440dbca3 1-2888
+src/gpx_parser.cpp
+  s_1725fbad7628af::t_ae977024eb0d62 286-288
+src/timestamp_repair.h
+  s_1725fbad7628af::t_e32bae270559ad 92-170
+  s_1725fbad7628af::t_ae977024eb0d62 4,6
+tests/run_tests.sh
+  s_1725fbad7628af::t_728921366f0cea 481-507
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "f934e94f36f9a49b41396c9a2466c7166154c061",
+  "prompts": {},
+  "sessions": {
+    "s_1725fbad7628af": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "08e01735-2c1a-4ecc-a5b5-e1b677a5f109",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "X. Koevoet <development@bikecoders.life>"
+    }
+  }
+}
