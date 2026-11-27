@@ -13,6 +13,7 @@
 #include <fit_session_mesg.hpp>
 #include <fit_file_id_mesg.hpp>
 #include <fit_device_info_mesg.hpp>
+#include <fit_event_mesg.hpp>
 #include <fit_profile.hpp>
 
 /**
@@ -88,6 +89,7 @@ public:
     SessionTotals session;
     FileIdInfo fileId;
     std::vector<DeviceInfoRecord> deviceInfos;
+    std::vector<GearEventRecord> gearEvents;
 
     void OnMesg(fit::Mesg& mesg) override {
         const auto num = mesg.GetNum();
@@ -150,6 +152,39 @@ public:
                 rec.batteryLevel = deviceMesg.GetBatteryLevel();
             }
             deviceInfos.push_back(rec);
+            return;
+        }
+
+        // Di2 / AXS gear changes (2.7.0): event 42 front_gear_change, 43
+        // rear_gear_change. The decoder expands gear_change_data into fields
+        // 9-12; the SDK Is...Valid() checks drop the invalid (zero) values.
+        if (num == FIT_MESG_NUM_EVENT) {
+            fit::EventMesg eventMesg(mesg);
+            if (!eventMesg.IsEventValid()) return;
+            const auto ev = eventMesg.GetEvent();
+            if (ev != FIT_EVENT_FRONT_GEAR_CHANGE && ev != FIT_EVENT_REAR_GEAR_CHANGE) return;
+            GearEventRecord rec;
+            if (eventMesg.IsTimestampValid()) {
+                rec.hasTimestamp = true;
+                rec.timestamp = eventMesg.GetTimestamp();
+            }
+            if (eventMesg.IsFrontGearValid()) {
+                rec.hasFrontGear = true;
+                rec.frontGear = eventMesg.GetFrontGear();
+            }
+            if (eventMesg.IsRearGearValid()) {
+                rec.hasRearGear = true;
+                rec.rearGear = eventMesg.GetRearGear();
+            }
+            if (eventMesg.IsFrontGearNumValid()) {
+                rec.hasFrontGearNum = true;
+                rec.frontGearNum = eventMesg.GetFrontGearNum();
+            }
+            if (eventMesg.IsRearGearNumValid()) {
+                rec.hasRearGearNum = true;
+                rec.rearGearNum = eventMesg.GetRearGearNum();
+            }
+            if (rec.hasTimestamp) gearEvents.push_back(rec);
             return;
         }
 
@@ -710,6 +745,10 @@ RideStatistic FitParser::extractCoordinates() {
     RideStatistic stats;
     stats.coordinates = listener.coordinates;
     stats.deviceInfos = listener.deviceInfos;
+    stats.gearEvents = listener.gearEvents;
+    // Decode order is not guaranteed to be time order: the JSON is time-ordered.
+    std::stable_sort(stats.gearEvents.begin(), stats.gearEvents.end(),
+        [](const GearEventRecord& a, const GearEventRecord& b) { return a.timestamp < b.timestamp; });
 
     // Roadmap #156: copy session totals through to the result. PHP
     // prefers these over the Haversine sum below when present.

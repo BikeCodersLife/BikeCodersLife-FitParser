@@ -138,6 +138,23 @@ void JsonOutput::writeCoordinates(const RideStatistic& stats) {
         std::cout << "  ]," << std::endl;
     }
 
+    // Di2 / AXS gear changes (2.7.0): omitted when the file has none, like devices.
+    if (!stats.gearEvents.empty()) {
+        std::cout << "  \"gearEvents\": [" << std::endl;
+        for (size_t g = 0; g < stats.gearEvents.size(); ++g) {
+            const auto& ev = stats.gearEvents[g];
+            std::cout << "    {\"timestamp\": \"" << timestampToIso8601(ev.timestamp) << "\"";
+            if (ev.hasFrontGear)    std::cout << ", \"front\": " << (int)ev.frontGear;
+            if (ev.hasRearGear)     std::cout << ", \"rear\": " << (int)ev.rearGear;
+            if (ev.hasFrontGearNum) std::cout << ", \"frontNum\": " << (int)ev.frontGearNum;
+            if (ev.hasRearGearNum)  std::cout << ", \"rearNum\": " << (int)ev.rearGearNum;
+            std::cout << "}";
+            if (g + 1 < stats.gearEvents.size()) std::cout << ",";
+            std::cout << std::endl;
+        }
+        std::cout << "  ]," << std::endl;
+    }
+
     std::cout << "  \"summary\": {" << std::endl;
     std::cout << "    \"points\": " << coordinates.size() << "," << std::endl;
     std::cout << "    \"distanceKm\": " << std::fixed << std::setprecision(2) << stats.distanceKm << "," << std::endl;

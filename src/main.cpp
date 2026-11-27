@@ -73,7 +73,8 @@ void printUsage(const char* programName) {
  * Print version information
  */
 void printVersion() {
-    std::cout << "BikeCodersLife FIT Parser v2.6.2" << std::endl;
+    std::cout << "BikeCodersLife FIT Parser v2.7.0" << std::endl;
+    std::cout << "v2.7.0: FIT event messages with front_gear_change / rear_gear_change (Di2, AXS) are decoded into an optional top-level gearEvents[] JSON array (timestamp, front / rear teeth, front / rear gear number; omitted when the file has none); fixes a use after free in the vendored SDK decoder that crashed on such events" << std::endl;
     std::cout << "v2.6.2: GPX/TCX: a log with several fixes inside every second (Road Grand Tours, 5 Hz with millisecond stamps) keeps one fix per second, so point speeds are no longer cut to a fifth" << std::endl;
     std::cout << "Built with Garmin FIT SDK + pugixml" << std::endl;
     std::cout << "Supports: FIT, GPX, TCX input | FIT, JSON output" << std::endl;

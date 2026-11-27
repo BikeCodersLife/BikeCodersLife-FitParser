@@ -974,8 +974,13 @@ void Decode::SuppressComponentExpansion(void)
     suppressComponentExpansion = FIT_TRUE;
 }
 
-void Decode::ExpandComponents(Field* containingField, const Profile::FIELD_COMPONENT* components, FIT_UINT16 numComponents)
+void Decode::ExpandComponents(Field* containingFieldInMesg, const Profile::FIELD_COMPONENT* components, FIT_UINT16 numComponents)
 {
+    // LOCAL PATCH (fit-parser 2.7.0): mesg.AddField() below can reallocate the
+    // message's field vector, which left containingField dangling (heap use after
+    // free, crash on event messages with gear_change_data). Work on a copy.
+    Field containingFieldCopy(*containingFieldInMesg);
+    Field* containingField = &containingFieldCopy;
     FIT_UINT16 offset = 0;
     FIT_UINT16 i;
 

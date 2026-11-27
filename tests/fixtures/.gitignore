@@ -1,3 +1,4 @@
 *.fit
 !invalid/
 !invalid/*.fit
+!gear-events-di2.fit

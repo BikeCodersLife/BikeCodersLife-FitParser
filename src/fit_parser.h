@@ -6,6 +6,7 @@
 #include <cstdint>
 
 #include "device_info_record.h"
+#include "gear_event_record.h"
 
 /**
  * Coordinate structure representing a GPS point
@@ -122,6 +123,10 @@ struct RideStatistic {
     // Per-sensor device_info messages, verbatim decode order (battery design
     // 2026-07-26). Empty for files without device_info (Strava exports, Zwift).
     std::vector<DeviceInfoRecord> deviceInfos;
+
+    // Di2 / AXS gear change events (2.7.0), time ordered. Empty for files
+    // without them (all GPX/TCX, most FIT), then no JSON key is written.
+    std::vector<GearEventRecord> gearEvents;
 };
 
 /**

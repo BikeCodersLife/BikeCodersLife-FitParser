@@ -77,6 +77,24 @@ All formats produce the same JSON output:
 }
 ```
 
+#### Optional `gearEvents` (FIT with Di2 / AXS, since v2.7.0)
+
+A FIT file whose head unit recorded electronic shifting (event 42
+`front_gear_change`, 43 `rear_gear_change`) adds a time-ordered top-level
+`gearEvents` array between `coordinates` and `summary`. The key is omitted
+when the file has no gear change (GPX, TCX and most FIT files).
+
+```json
+"gearEvents": [
+  {"timestamp": "2025-06-15T06:31:05Z", "front": 50, "rear": 17, "frontNum": 2, "rearNum": 5},
+  {"timestamp": "2025-06-15T06:40:12Z", "front": 34, "frontNum": 1}
+]
+```
+
+`front` / `rear` are the chainring / sprocket teeth, `frontNum` / `rearNum`
+the gear number (1 = innermost). Each of the four keys is absent when the
+device did not report it (a front change usually carries the front values only).
+
 ### Convert GPX/TCX to FIT
 
 ```bash

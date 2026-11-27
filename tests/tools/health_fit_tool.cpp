@@ -4,6 +4,8 @@
 //                                    of the SDK profile, developer fields (CORE
 //                                    body temperature, power) on records, laps and
 //                                    the session, and an event for every event type
+//   health-fit-tool gear <out.fit>  small ride with Di2/AXS gear change events (2 front, 3 rear,
+//                                    one rear change with the size only, one unrelated event)
 //   health-fit-tool dump <in.fit>    one line per message: number, fields, developer
 //                                    field count (expanded component fields skipped)
 //
@@ -26,6 +28,8 @@
 #include <fit_mesg.hpp>
 #include <fit_mesg_listener.hpp>
 #include <fit_profile.hpp>
+#include <fit_event_mesg.hpp>
+#include <fit_file_id_mesg.hpp>
 #include <fit_record_mesg.hpp>
 
 namespace {
@@ -49,6 +53,61 @@ void fillAll(fit::Mesg& mesg, uint32_t timestamp) {
             field->SetFLOAT64Value(1.0);
         }
     }
+}
+
+// Small deterministic ride for the gearEvents JSON key. Gear changes carry the
+// packed gear_change_data (field 3) the way head units write it; the SDK decoder
+// expands it into fields 9-12. Byte order of the packed value: rear_gear_num,
+// rear_gear, front_gear_num, front_gear (least significant first).
+int makeGear(const std::string& path) {
+    std::fstream file(path, std::ios::in | std::ios::out | std::ios::binary | std::ios::trunc);
+    if (!file.is_open()) {
+        return 2;
+    }
+    fit::Encode encode(fit::ProtocolVersion::V20);
+    encode.Open(file);
+
+    fit::FileIdMesg fileId;
+    fileId.SetType(FIT_FILE_ACTIVITY);
+    fileId.SetManufacturer(1);
+    fileId.SetTimeCreated(kStart);
+    encode.Write(fileId);
+
+    for (int i = 0; i < 60; ++i) {
+        fit::RecordMesg rec;
+        rec.SetTimestamp(kStart + i);
+        rec.SetPositionLat(626000000 + i * 1000);
+        rec.SetPositionLong(60000000 + i * 1500);
+        encode.Write(rec);
+    }
+
+    struct Change { uint32_t t; FIT_EVENT event; uint32_t packed; };
+    auto pack = [](uint32_t rearNum, uint32_t rear, uint32_t frontNum, uint32_t front) {
+        return rearNum | (rear << 8) | (frontNum << 16) | (front << 24);
+    };
+    const Change changes[] = {
+        {kStart + 5, FIT_EVENT_REAR_GEAR_CHANGE, pack(5, 17, 2, 50)},   // rear 17T (5th), front 50T (2nd)
+        {kStart + 12, FIT_EVENT_REAR_GEAR_CHANGE, pack(4, 15, 2, 50)},
+        {kStart + 20, FIT_EVENT_FRONT_GEAR_CHANGE, pack(0, 0, 1, 34)},  // front down to 34T (inner), rear unknown
+        {kStart + 33, FIT_EVENT_REAR_GEAR_CHANGE, pack(0, 13, 0, 0)},   // rear size only, no gear numbers
+        {kStart + 41, FIT_EVENT_FRONT_GEAR_CHANGE, pack(0, 0, 2, 50)},  // front back up to 50T
+    };
+    for (const Change& c : changes) {
+        fit::EventMesg event;
+        event.SetTimestamp(c.t);
+        event.SetEvent(c.event);
+        event.SetEventType(FIT_EVENT_TYPE_MARKER);
+        event.SetGearChangeData(c.packed);
+        encode.Write(event);
+    }
+    // not a gear event: timer stop, must not appear in gearEvents
+    fit::EventMesg timer;
+    timer.SetTimestamp(kStart + 50);
+    timer.SetEvent(FIT_EVENT_TIMER);
+    timer.SetEventType(FIT_EVENT_TYPE_STOP);
+    encode.Write(timer);
+
+    return encode.Close() ? 0 : 3;
 }
 
 int makeRich(const std::string& path) {
@@ -309,12 +368,15 @@ int main(int argc, char** argv) {
     if (argc == 3 && std::strcmp(argv[1], "rich") == 0) {
         return makeRich(argv[2]);
     }
+    if (argc == 3 && std::strcmp(argv[1], "gear") == 0) {
+        return makeGear(argv[2]);
+    }
     if (argc == 3 && std::strcmp(argv[1], "dump") == 0) {
         return dump(argv[2]);
     }
     if (argc == 3 && std::strcmp(argv[1], "checktable") == 0) {
         return checkTable(argv[2]);
     }
-    std::cerr << "usage: health-fit-tool rich <out.fit> | dump <in.fit> | checktable <tsv>\n";
+    std::cerr << "usage: health-fit-tool rich <out.fit> | gear <out.fit> | dump <in.fit> | checktable <tsv>\n";
     return 1;
 }
