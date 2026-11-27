@@ -1,0 +1,39 @@
+CMakeLists.txt
+  s_f0febe16fb7526::t_c015eba74f4fb6 2
+README.md
+  s_f0febe16fb7526::t_82ff94e66c554c 80-97
+docs-site/docs/reference/json-output.md
+  s_f0febe16fb7526::t_14bd61bf109a78 8-27
+src/fit_parser.cpp
+  s_f0febe16fb7526::t_c1f01cb3cdfc57 16,92,158-190,748-751
+src/fit_parser.h
+  s_f0febe16fb7526::t_3615919654cbb4 9,126-129
+src/gear_event_record.h
+  s_f0febe16fb7526::t_5d227212a0aeb3 1-30
+src/json_output.cpp
+  s_f0febe16fb7526::t_d1147465813b45 141-157
+src/main.cpp
+  s_f0febe16fb7526::t_dddf674bb7d50c 76-77
+tests/fixtures/.gitignore
+  s_f0febe16fb7526::t_0578e097c90b83 4
+tests/tools/health_fit_tool.cpp
+  s_f0febe16fb7526::t_719dbe3c1e2595 7-8,31-32,58-112,371-373,380
+third_party/fit-sdk/cpp/fit_decode.cpp
+  s_f0febe16fb7526::t_5d51fc88e4a147 977,979-983
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "419d77dd18e943304428b900fc3ad1d796322d8d",
+  "prompts": {},
+  "sessions": {
+    "s_f0febe16fb7526": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "f7e90186-6d9f-4303-8582-738b0b63b103",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "X. Koevoet <development@bikecoders.life>"
+    }
+  }
+}
